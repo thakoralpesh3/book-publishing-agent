@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  publisher-ai:
+    build: .
+    container_name: publisher-ai
+    ports:
+      - "8550:8550"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-4-argon}
+      - DEFAULT_AUTHOR=${DEFAULT_AUTHOR:-Alpesh Patel}
+      - DEFAULT_PUBLISHER=${DEFAULT_PUBLISHER:-InspireBooks Press}
+      - PORT=8550
+    volumes:
+      - ./data:/app/data
+      - ./output:/app/output
+    restart: unless-stopped

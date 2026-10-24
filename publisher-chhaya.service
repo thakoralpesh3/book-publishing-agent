@@ -1,0 +1,16 @@
+[Unit]
+Description=PublisheR AI • 24/7 Mobile Gateway (Amazon & Flipkart Publishing Agents)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/alpesh/book-publishing-agent
+ExecStart=/usr/bin/python3 /home/alpesh/book-publishing-agent/mobile_gateway.py
+Restart=always
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+StandardOutput=append:/home/alpesh/book-publishing-agent/data/gateway_systemd.log
+StandardError=append:/home/alpesh/book-publishing-agent/data/gateway_systemd.log
+
+[Install]
+WantedBy=default.target

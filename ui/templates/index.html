@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>PublisheR AI — Amazon & Flipkart Book Publishing Agent</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: radial-gradient(circle at top, #0f172a, #020617);
+            min-height: 100vh;
+            color: #f8fafc;
+            padding-bottom: 5rem; /* Space for mobile bottom bar */
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 1rem;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #ffffff;
+            box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+        }
+        .agent-pill.active {
+            border-color: #38bdf8;
+            background: rgba(56, 189, 248, 0.15);
+            color: #ffffff;
+        }
+        pre code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        }
+        /* Mobile touch responsiveness */
+        @media (max-width: 768px) {
+            button, a, input, select {
+                min-height: 42px;
+            }
+        }
+    </style>
+</head>
+<body class="p-3 sm:p-4 md:p-8">
+    <div class="max-w-7xl mx-auto space-y-5 sm:space-y-6">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 sm:pb-6 border-b border-slate-800">
+            <div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-blue-600 flex items-center justify-center text-white text-xl shadow-lg">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2 sm:gap-3">
+                            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-400 via-sky-300 to-amber-300 bg-clip-text text-transparent">
+                                PublisheR AI
+                            </h1>
+                            <span class="px-2.5 py-0.5 rounded-full bg-gradient-to-r from-purple-500/20 to-blue-500/20 text-purple-300 border border-purple-500/40 text-xs font-bold flex items-center gap-1 shadow-sm">
+                                <i class="fa-solid fa-bolt text-amber-400 text-xs"></i> Gemini 4 Argon
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-400 mt-1">Autonomous Publishing for <span class="text-amber-400 font-semibold">Amazon KDP</span> and <span class="text-blue-400 font-semibold">Flipkart Seller Hub</span></p>
+            </div>
+
+            <!-- Header Controls: Mobile Connect & Book Selector -->
+            <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                <!-- Autonomous Background Pipeline Status Button -->
+                <button onclick="openBackgroundModal()" class="flex-1 md:flex-none px-3.5 py-2 bg-gradient-to-r from-emerald-600/30 to-teal-600/30 hover:from-emerald-600/40 hover:to-teal-600/40 border border-emerald-500/40 text-emerald-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition">
+                    <i class="fa-solid fa-robot text-emerald-400"></i>
+                    <span>Background Pipeline</span>
+                    <span id="bgStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </button>
+
+                <!-- Mobile Connect QR Button (Chhaya Pattern) -->
+                <button onclick="openMobileModal()" class="flex-1 md:flex-none px-3.5 py-2 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 hover:from-purple-600/40 hover:to-indigo-600/40 border border-purple-500/40 text-purple-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition">
+                    <i class="fa-solid fa-mobile-screen-button text-purple-400"></i>
+                    <span>Mobile Access &amp; QR</span>
+                    <span id="tunnelStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                </button>
+
+                <!-- GitHub Cloud Sync Button -->
+                <button onclick="openGitModal()" class="flex-1 md:flex-none px-3.5 py-2 bg-gradient-to-r from-slate-700/50 to-slate-800/80 hover:from-slate-700 hover:to-slate-800 border border-slate-600/60 text-slate-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition" title="GitHub Cloud Sync">
+                    <i class="fa-brands fa-github text-white text-sm"></i>
+                    <span>GitHub Sync</span>
+                    <span id="gitSyncDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                </button>
+
+                <!-- Existing Books Selector -->
+                <div class="flex items-center gap-2 flex-1 md:flex-none">
+                    <select id="bookSelector" onchange="loadSelectedBook()" class="w-full md:w-auto bg-slate-900 border border-slate-700 text-xs sm:text-sm rounded-lg px-3 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500">
+                        <option value="">Select Existing Book...</option>
+                    </select>
+                    <button onclick="refreshBooksList()" title="Refresh book list" class="px-2.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs sm:text-sm transition">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Desktop Navigation Tabs (Hidden on very small mobile, visible on tablet/desktop) -->
+        <nav class="hidden md:flex flex-wrap gap-2 p-1.5 glass-card rounded-xl">
+            <button onclick="switchTab('studio')" id="tab-btn-studio" class="tab-btn active px-5 py-2.5 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 1. Book Studio
+            </button>
+            <button onclick="switchTab('metadata')" id="tab-btn-metadata" class="tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-tags"></i> 2. Listing Metadata
+            </button>
+            <button onclick="switchTab('files')" id="tab-btn-files" class="tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> 3. Download Artifacts
+            </button>
+            <button onclick="switchTab('uploader')" id="tab-btn-uploader" class="tab-btn px-5 py-2.5 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                <i class="fa-solid fa-cloud-arrow-up"></i> 4. Upload Assistant
+            </button>
+        </nav>
+
+        <!-- Dual Agent Mobile Quick-Switch Bar -->
+        <div class="flex items-center gap-2 p-1 glass-card rounded-xl text-xs font-semibold">
+            <span class="text-slate-400 pl-2 hidden sm:inline">Active Agent:</span>
+            <button onclick="setAgentFilter('all')" id="agent-pill-all" class="agent-pill active flex-1 py-2 px-3 rounded-lg border border-slate-700/50 text-center transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-layer-group"></i> Both Agents
+            </button>
+            <button onclick="setAgentFilter('amazon')" id="agent-pill-amazon" class="agent-pill flex-1 py-2 px-3 rounded-lg border border-slate-700/50 text-amber-300 text-center transition flex items-center justify-center gap-1.5">
+                <i class="fa-brands fa-amazon text-amber-400"></i> Amazon KDP Agent
+            </button>
+            <button onclick="setAgentFilter('flipkart')" id="agent-pill-flipkart" class="agent-pill flex-1 py-2 px-3 rounded-lg border border-slate-700/50 text-blue-300 text-center transition flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-cart-shopping text-blue-400"></i> Flipkart Agent
+            </button>
+        </div>
+
+        <!-- TAB 1: BOOK STUDIO -->
+        <section id="tab-studio" class="space-y-6">
+
+            <!-- 🔥 DAILY TRENDS RADAR (AMAZON & FLIPKART) -->
+            <div class="glass-card p-4 sm:p-6 border-amber-500/20 bg-gradient-to-b from-slate-900/90 via-slate-900/60 to-slate-900/90">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-4 border-b border-slate-800">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-amber-400 text-lg"><i class="fa-solid fa-fire-flame-curved"></i></span>
+                            <h2 class="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2">
+                                Daily Trends Radar
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30 font-medium">Amazon &amp; Flipkart Hot Niches</span>
+                            </h2>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">High-velocity demand niches, 0% GST book opportunities &amp; 1-click publishing blueprints</p>
+                    </div>
+                    <div class="flex items-center gap-2 w-full md:w-auto">
+                        <button onclick="scoutLiveTrends()" id="scoutTrendsBtn" class="flex-1 md:flex-none px-3.5 py-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 border border-amber-500/40 text-amber-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition">
+                            <i class="fa-solid fa-arrows-rotate" id="scoutIcon"></i>
+                            <span>Scout Live Trends</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Trend Category & Search Filter Toolbar -->
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-3.5 pb-2">
+                    <div class="flex flex-wrap items-center gap-1.5 text-xs font-semibold" id="trendCategoryPills">
+                        <button onclick="filterTrendsCategory('all')" id="trend-cat-all" class="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white transition">All Trends</button>
+                        <button onclick="filterTrendsCategory('kids')" id="trend-cat-kids" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 transition">🎨 Kids Drawing</button>
+                        <button onclick="filterTrendsCategory('wealth')" id="trend-cat-wealth" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 transition">💰 Wealth &amp; Rich</button>
+                        <button onclick="filterTrendsCategory('mindset')" id="trend-cat-mindset" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 transition">🧠 Mindset &amp; Focus</button>
+                        <button onclick="filterTrendsCategory('tech')" id="trend-cat-tech" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 transition">🤖 AI &amp; Tech</button>
+                        <button onclick="filterTrendsCategory('health')" id="trend-cat-health" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-teal-300 transition">🌿 Health</button>
+                    </div>
+                    <div class="relative min-w-[220px]">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-500 text-xs"></i>
+                        <input type="text" id="trendSearchInput" oninput="handleTrendSearch(this.value)" placeholder="Search trends (drawing, rich...)" 
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-amber-400">
+                    </div>
+                </div>
+
+                <!-- Trends Cards Container -->
+                <div id="trendsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mt-3">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Manual Custom Generation Card -->
+            <div class="glass-card p-4 sm:p-6" id="customGenerationCard">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <h2 class="text-base sm:text-lg font-semibold text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-pen-nib text-blue-400"></i> Book Publishing Blueprint &amp; Generator
+                    </h2>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-500/30 rounded-lg text-xs font-semibold text-purple-300 w-fit">
+                        <i class="fa-solid fa-brain text-amber-400"></i> Gemini 4 Argon • 32K Token Depth
+                    </span>
+                </div>
+                <form id="createBookForm" onsubmit="handleCreateBook(event)" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Book Topic or Working Concept *</label>
+                            <input type="text" id="topicInput" required placeholder="e.g. How to Draw Cute Animals: 50 Step-by-Step Drawing Lessons for Kids" 
+                                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 sm:py-3 text-slate-100 text-sm placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Book Architecture / Type</label>
+                            <select id="bookTypeInput" onchange="handleBookTypeChange(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="auto" selected>✨ Auto-Detect from Topic</option>
+                                <option value="activity_drawing">🎨 Kids Drawing &amp; Activity Book (8.5" x 11", Step-by-Step + Practice Grids)</option>
+                                <option value="standard">📘 Standard Non-Fiction (6" x 9", Wealth, Business, Self-Help)</option>
+                                <option value="workbook_journal">📝 Interactive Workbook / Journal</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Target Audience</label>
+                            <input type="text" id="audienceInput" value="Children Ages 4-9, Parents &amp; Preschool Teachers" 
+                                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Target Modules / Chapters</label>
+                            <select id="chaptersInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="3">3 Chapters / Modules (Concise Quick-Guide)</option>
+                                <option value="5" selected>5 Chapters / Modules (Standard Blueprint)</option>
+                                <option value="7">7 Chapters / Modules (Deep Comprehensive Edition)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Paperback Trim Size</label>
+                            <select id="trimSizeInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="8.5x11" selected>8.5" x 11" (Standard for Kids Drawing &amp; Workbooks)</option>
+                                <option value="6x9">6" x 9" (Standard Trade / Wealth / Self-Help)</option>
+                                <option value="5.5x8.5">5.5" x 8.5" (Compact Digest)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Author Name</label>
+                            <input type="text" id="authorInput" value="{{ default_author }}" 
+                                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1">Publisher Name</label>
+                            <input type="text" id="publisherInput" value="{{ default_publisher }}" 
+                                   class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1 flex items-center justify-between">
+                                <span><i class="fa-solid fa-cloud-arrow-up text-amber-400 mr-1.5"></i> Post-Generation Upload Action</span>
+                                <span class="text-[11px] text-slate-400 lowercase font-normal">automatically launch upload assistant on completion</span>
+                            </label>
+                            <select id="autoUploadInput" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                <option value="" selected>✨ Show Post-Generation Publishing Modal (Recommended: Choose platform after audit)</option>
+                                <option value="kdp">🚀 Auto-Launch Amazon KDP Upload Assistant (Pre-fills details &amp; files)</option>
+                                <option value="flipkart">🚀 Auto-Launch Flipkart Seller Hub Assistant (Prepares bulk catalog ingestion)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="pt-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-slate-800">
+                        <p class="text-xs text-slate-400">
+                            <i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Auto-generates interior PDF (with drawing grids if activity book), full-wrap cover, Amazon KDP pack &amp; Flipkart catalog.
+                        </p>
+                        <button type="submit" id="generateBtn" class="w-full sm:w-auto px-6 py-2.5 sm:py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold rounded-lg shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 transition text-sm">
+                            <i class="fa-solid fa-bolt"></i> Generate Book &amp; Listings
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+
+            <!-- Live Progress Card -->
+            <div id="progressCard" class="hidden glass-card p-5 border-blue-500/30">
+                <div class="flex items-center gap-4">
+                    <div class="animate-spin text-blue-400 text-2xl">
+                        <i class="fa-solid fa-circle-notch"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold text-slate-200 text-sm sm:text-base" id="progressTitle">Publishing Pipeline Running...</h4>
+                        <p class="text-xs text-slate-400" id="progressSubtitle">Generating book outline, chapters, print PDF, cover art, and Amazon/Flipkart listings. This takes about 60-90 seconds.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: METADATA INTELLIGENCE -->
+        <section id="tab-metadata" class="hidden space-y-6">
+            <div id="noBookSelectedAlert" class="glass-card p-6 sm:p-8 text-center">
+                <i class="fa-solid fa-circle-info text-3xl sm:text-4xl text-slate-500 mb-2 sm:mb-3"></i>
+                <p class="text-xs sm:text-sm text-slate-300">No book selected. Generate a book in the <b>Book Studio</b> or choose one from the top selector.</p>
+            </div>
+
+            <div id="metadataContainer" class="hidden space-y-4 sm:space-y-6">
+                <!-- 🛡️ ZERO-MISTAKE PRE-FLIGHT AUDIT CARD -->
+                <div id="zeroMistakeAuditBanner" class="glass-card p-4 sm:p-6 border-emerald-500/30 bg-gradient-to-r from-emerald-950/30 via-slate-900 to-slate-900 shadow-xl space-y-3 sm:space-y-4">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl">
+                                <i class="fa-solid fa-shield-check"></i>
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-base sm:text-lg font-bold text-slate-100">Zero-Mistake Pre-Flight Certification</h3>
+                                    <span id="auditStatusBadge" class="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-xs font-bold flex items-center gap-1.5">
+                                        <i class="fa-solid fa-circle-check"></i> 100% Certified
+                                    </span>
+                                </div>
+                                <p class="text-xs text-slate-400">Automated 25-point compliance audit for Amazon KDP &amp; Flipkart Seller Hub rejection prevention</p>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                            <div class="text-right sm:mr-2">
+                                <div class="text-xs text-slate-400">Compliance Score</div>
+                                <div id="auditScoreBadge" class="text-lg sm:text-xl font-extrabold text-emerald-400">100%</div>
+                            </div>
+                            <button onclick="revalidateCurrentBook()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+                                <i class="fa-solid fa-arrows-rotate"></i> Re-Verify
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Platform Readiness Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                        <div id="auditAmzStatus" class="p-3 bg-slate-900/90 rounded-lg border border-slate-800/80 text-xs flex items-center gap-2">
+                            <i class="fa-brands fa-amazon text-amber-400 text-base"></i>
+                            <span>Amazon KDP: 100% Ready</span>
+                        </div>
+                        <div id="auditFkStatus" class="p-3 bg-slate-900/90 rounded-lg border border-slate-800/80 text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-cart-shopping text-blue-400 text-base"></i>
+                            <span>Flipkart Hub: 100% Ready</span>
+                        </div>
+                        <div id="auditPodStatus" class="p-3 bg-slate-900/90 rounded-lg border border-slate-800/80 text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-print text-emerald-400 text-base"></i>
+                            <span>POD Aggregators: 100% Ready</span>
+                        </div>
+                    </div>
+
+                    <!-- Collapsible 25-Point Checklist Toggle -->
+                    <div class="pt-1">
+                        <button onclick="toggleAuditChecklist()" class="text-xs text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1.5">
+                            <span>View 25-Point Verification Audit Details</span>
+                            <i id="auditToggleIcon" class="fa-solid fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="auditChecklistDetails" class="hidden mt-3 p-3 bg-slate-950/80 rounded-lg border border-slate-800 space-y-1 max-h-60 overflow-y-auto">
+                            <div id="auditChecklistContainer" class="space-y-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <!-- AMAZON KDP COLUMN -->
+                <div id="agent-col-amazon" class="glass-card p-4 sm:p-6 space-y-4 sm:space-y-5 border-amber-500/20">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div class="flex items-center gap-2 text-amber-400 font-bold text-base sm:text-lg">
+                            <i class="fa-brands fa-amazon text-xl sm:text-2xl"></i> Amazon KDP Agent
+                        </div>
+                        <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-amber-500/10 text-amber-300 text-xs rounded-full border border-amber-500/30 font-medium">eBook + Paperback</span>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-semibold uppercase text-slate-400">Book Title</span>
+                            <button onclick="copyToClipboard('kdpTitle')" class="text-xs text-blue-400 hover:text-blue-300 p-1"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+                        <p id="kdpTitle" class="p-2.5 bg-slate-900/90 rounded border border-slate-800 text-xs sm:text-sm font-medium text-slate-100"></p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-semibold uppercase text-slate-400">Subtitle</span>
+                            <button onclick="copyToClipboard('kdpSubtitle')" class="text-xs text-blue-400 hover:text-blue-300 p-1"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+                        <p id="kdpSubtitle" class="p-2.5 bg-slate-900/90 rounded border border-slate-800 text-xs sm:text-sm text-slate-300"></p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-semibold uppercase text-slate-400">KDP-Compliant HTML Description</span>
+                            <button onclick="copyToClipboard('kdpHtmlDesc')" class="text-xs text-blue-400 hover:text-blue-300 p-1"><i class="fa-regular fa-copy"></i> Copy HTML</button>
+                        </div>
+                        <div id="kdpDescPreview" class="p-3 bg-slate-900/90 rounded border border-slate-800 text-xs text-slate-300 max-h-48 overflow-y-auto space-y-2"></div>
+                        <textarea id="kdpHtmlDesc" class="hidden"></textarea>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-semibold uppercase text-slate-400">7 Amazon Backend Keywords</span>
+                            <button onclick="copyKeywords()" class="text-xs text-blue-400 hover:text-blue-300 p-1"><i class="fa-regular fa-copy"></i> Copy All 7</button>
+                        </div>
+                        <div id="kdpKeywordsContainer" class="flex flex-wrap gap-1.5 sm:gap-2"></div>
+                    </div>
+
+                    <div>
+                        <span class="text-xs font-semibold uppercase text-slate-400 block mb-1">Browse Categories</span>
+                        <ul id="kdpCategoriesList" class="space-y-1 text-xs text-slate-300 p-2.5 bg-slate-900/90 rounded border border-slate-800"></ul>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 sm:gap-3 pt-1">
+                        <div class="p-2.5 sm:p-3 bg-slate-900/80 rounded border border-slate-800">
+                            <span class="text-xs text-slate-400 block">Suggested Price (India):</span>
+                            <span id="kdpPriceInr" class="text-xs sm:text-sm font-semibold text-emerald-400">₹199 / ₹399</span>
+                        </div>
+                        <div class="p-2.5 sm:p-3 bg-slate-900/80 rounded border border-slate-800">
+                            <span class="text-xs text-slate-400 block">Suggested Price (US):</span>
+                            <span id="kdpPriceUsd" class="text-xs sm:text-sm font-semibold text-emerald-400">$2.99 / $6.99</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FLIPKART SELLER HUB COLUMN -->
+                <div id="agent-col-flipkart" class="glass-card p-4 sm:p-6 space-y-4 sm:space-y-5 border-blue-500/20">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                        <div class="flex items-center gap-2 text-blue-400 font-bold text-base sm:text-lg">
+                            <i class="fa-solid fa-cart-shopping text-lg sm:text-xl"></i> Flipkart Book Agent
+                        </div>
+                        <span class="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-blue-500/10 text-blue-300 text-xs rounded-full border border-blue-500/30 font-medium">Books Vertical</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 sm:gap-3">
+                        <div>
+                            <span class="text-xs font-semibold uppercase text-slate-400 block mb-1">Seller SKU ID</span>
+                            <p id="fkSku" class="p-2 bg-slate-900 rounded border border-slate-800 text-xs font-mono text-slate-200"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-semibold uppercase text-slate-400 block mb-1">ISBN-13 (Required)</span>
+                            <p id="fkIsbn" class="p-2 bg-slate-900 rounded border border-slate-800 text-xs font-mono text-slate-200"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-semibold uppercase text-slate-400 block mb-1">HSN Code (GST 0%)</span>
+                            <p id="fkHsn" class="p-2 bg-slate-900 rounded border border-slate-800 text-xs text-emerald-400 font-semibold"></p>
+                        </div>
+                        <div>
+                            <span class="text-xs font-semibold uppercase text-slate-400 block mb-1">Binding &amp; Pages</span>
+                            <p id="fkBindingPages" class="p-2 bg-slate-900 rounded border border-slate-800 text-xs text-slate-200"></p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-xs font-semibold uppercase text-slate-400 block mb-1">Package Specs (Ekart Logistics)</span>
+                        <p id="fkSpecs" class="p-2.5 bg-slate-900 rounded border border-slate-800 text-xs text-slate-300"></p>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-semibold uppercase text-slate-400">Highlights (Flipkart Mobile App)</span>
+                            <button onclick="copyToClipboard('fkHighlightsRaw')" class="text-xs text-blue-400 hover:text-blue-300 p-1"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+                        <ul id="fkHighlightsList" class="space-y-1 text-xs text-slate-300 p-2.5 bg-slate-900 rounded border border-slate-800"></ul>
+                        <textarea id="fkHighlightsRaw" class="hidden"></textarea>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1">
+                            <span class="text-xs font-semibold uppercase text-slate-400">Flipkart Synopsis</span>
+                            <button onclick="copyToClipboard('fkSynopsis')" class="text-xs text-blue-400 hover:text-blue-300 p-1"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+                        <p id="fkSynopsis" class="p-3 bg-slate-900 rounded border border-slate-800 text-xs text-slate-300 max-h-36 overflow-y-auto"></p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 sm:gap-3 pt-1">
+                        <div class="p-2.5 sm:p-3 bg-slate-900/80 rounded border border-slate-800">
+                            <span class="text-xs text-slate-400 block">MRP (INR):</span>
+                            <span id="fkMrp" class="text-xs sm:text-sm font-semibold text-slate-200">₹399</span>
+                        </div>
+                        <div class="p-2.5 sm:p-3 bg-slate-900/80 rounded border border-slate-800">
+                            <span class="text-xs text-slate-400 block">Flipkart Selling Price:</span>
+                            <span id="fkSellingPrice" class="text-xs sm:text-sm font-semibold text-emerald-400">₹299</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: DOWNLOAD ARTIFACTS -->
+        <section id="tab-files" class="hidden space-y-6">
+            <div class="glass-card p-4 sm:p-6">
+                <h2 class="text-base sm:text-lg font-semibold text-slate-100 mb-3 sm:mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Download Publishing Artifacts
+                </h2>
+                <div id="filesListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <!-- Cards will be dynamically injected -->
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: UPLOAD ASSISTANT -->
+        <section id="tab-uploader" class="hidden space-y-5 sm:space-y-6">
+            <!-- Pre-Flight Verification Alert Banner in Uploader -->
+            <div id="uploaderAuditBanner" class="glass-card p-4 sm:p-5 border-emerald-500/30 bg-slate-900 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div id="uploaderAuditStatus">
+                    <span class="text-emerald-300 font-semibold flex items-center gap-2">
+                        <i class="fa-solid fa-shield-check text-emerald-400 text-base"></i> Pre-Flight Certified: 100% Rejection-Free for Amazon &amp; Flipkart
+                    </span>
+                </div>
+                <button onclick="revalidateCurrentBook()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold flex items-center gap-2 transition">
+                    <i class="fa-solid fa-arrows-rotate"></i> Re-Verify Audit
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                
+                <!-- Amazon KDP Upload Assistant -->
+                <div class="glass-card p-4 sm:p-6 space-y-3 sm:space-y-4 border-amber-500/20">
+                    <div class="flex items-center gap-2.5 text-amber-400 font-bold text-base sm:text-lg">
+                        <i class="fa-brands fa-amazon text-xl sm:text-2xl"></i> Amazon KDP Upload Assistant
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Launches a persistent browser session. Automatically populates the Title, Subtitle, Author, HTML Description, and 7 Keywords, and prepares file upload slots.
+                    </p>
+                    <div class="p-2.5 sm:p-3 bg-slate-900 rounded border border-slate-800 text-xs text-slate-400 space-y-1">
+                        <div class="font-semibold text-slate-300">Automated Actions:</div>
+                        <div>✓ Navigates to KDP Bookshelf</div>
+                        <div>✓ Selects Create Paperback or eBook</div>
+                        <div>✓ Injects Title, Subtitle, Author, Rights &amp; Keywords</div>
+                        <div>✓ Pre-populates formatted HTML description</div>
+                    </div>
+                    <button onclick="launchUpload('kdp')" class="w-full py-2.5 sm:py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg shadow-lg shadow-amber-600/25 flex items-center justify-center gap-2 transition text-xs sm:text-sm">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Launch KDP Browser Assistant
+                    </button>
+                </div>
+
+                <!-- Flipkart Seller Hub Assistant -->
+                <div class="glass-card p-4 sm:p-6 space-y-3 sm:space-y-4 border-blue-500/20">
+                    <div class="flex items-center gap-2.5 text-blue-400 font-bold text-base sm:text-lg">
+                        <i class="fa-solid fa-cart-shopping text-lg sm:text-xl"></i> Flipkart Seller Hub Assistant
+                    </div>
+                    <p class="text-xs text-slate-300 leading-relaxed">
+                        Runs complete compliance verification on your book parameters (ISBN, HSN code 4901, dimensions, weight, MRP) and opens the Flipkart Seller Hub bulk catalog ingestion portal.
+                    </p>
+                    <div class="p-2.5 sm:p-3 bg-slate-900 rounded border border-slate-800 text-xs text-slate-400 space-y-1">
+                        <div class="font-semibold text-slate-300">Verification &amp; Checklist:</div>
+                        <div>✓ ISBN-13 format validation</div>
+                        <div>✓ HSN Code 4901.10.00 check (0% GST)</div>
+                        <div>✓ Packaging dimension &amp; courier weight tier</div>
+                        <div>✓ Ready-to-upload spreadsheet: <span class="text-blue-400 font-mono">flipkart_bulk_catalog.xlsx</span></div>
+                    </div>
+                    <button onclick="launchUpload('flipkart')" class="w-full py-2.5 sm:py-3 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 transition text-xs sm:text-sm">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Launch Flipkart Seller Portal
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Zero-Inventory Aggregator Info Box -->
+            <div class="glass-card p-4 sm:p-6 border-emerald-500/30">
+                <h3 class="text-xs sm:text-sm font-semibold text-emerald-400 flex items-center gap-2 mb-2">
+                    <i class="fa-solid fa-print"></i> Zero-Inventory Print-on-Demand Pathway (Flipkart + Amazon)
+                </h3>
+                <p class="text-xs text-slate-300 leading-relaxed">
+                    If you do not hold physical inventory or an Indian GSTIN for courier pickup, upload the generated interior PDF and cover wrap to <b>Notion Press</b> (notionpress.com) or <b>Pothi</b> (pothi.com). These distributors automatically list your book on <b>both Flipkart and Amazon India</b>, print on demand when an order arrives, and deposit royalties directly into your bank account!
+                </p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Mobile Bottom Navigation Bar (Visible only on mobile screens md:hidden) -->
+    <div class="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/90 backdrop-blur-lg border-t border-slate-800/80 md:hidden flex justify-around items-center px-2 py-2">
+        <button onclick="switchTab('studio')" id="m-btn-studio" class="flex flex-col items-center gap-1 text-slate-400 focus:text-blue-400 text-xs active">
+            <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+            <span>Studio</span>
+        </button>
+        <button onclick="switchTab('metadata'); setAgentFilter('amazon')" id="m-btn-amazon" class="flex flex-col items-center gap-1 text-slate-400 focus:text-amber-400 text-xs">
+            <i class="fa-brands fa-amazon text-base text-amber-400"></i>
+            <span>Amazon</span>
+        </button>
+        <button onclick="switchTab('metadata'); setAgentFilter('flipkart')" id="m-btn-flipkart" class="flex flex-col items-center gap-1 text-slate-400 focus:text-blue-400 text-xs">
+            <i class="fa-solid fa-cart-shopping text-base text-blue-400"></i>
+            <span>Flipkart</span>
+        </button>
+        <button onclick="switchTab('files')" id="m-btn-files" class="flex flex-col items-center gap-1 text-slate-400 focus:text-emerald-400 text-xs">
+            <i class="fa-solid fa-folder-open text-base"></i>
+            <span>Files</span>
+        </button>
+        <button onclick="switchTab('uploader')" id="m-btn-uploader" class="flex flex-col items-center gap-1 text-slate-400 focus:text-purple-400 text-xs">
+            <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+            <span>Upload</span>
+        </button>
+    </div>
+
+    <!-- Mobile Connect & QR Code Modal (Project Chhaya Style) -->
+    <div id="mobileModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-sm w-full p-6 text-center space-y-4 shadow-2xl relative">
+            <button onclick="closeMobileModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 mx-auto flex items-center justify-center text-xl">
+                <i class="fa-solid fa-qrcode"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-base text-slate-100">Connect via Smartphone</h3>
+                <p class="text-xs text-slate-400 mt-1">Scan this QR code with your phone camera or visit the public HTTPS link:</p>
+            </div>
+            <div class="bg-white p-3 rounded-xl inline-block mx-auto shadow-md">
+                <img id="modalQrImg" src="/static/mobile_qr.png" alt="Mobile QR Code" class="w-48 h-48 mx-auto" onerror="this.src='/static/test_qr.png'">
+            </div>
+            <div class="space-y-2">
+                <div class="flex items-center gap-1.5 bg-slate-950 p-2 rounded-lg border border-slate-800 text-xs text-slate-300">
+                    <span id="modalPublicUrl" class="truncate flex-1 font-mono text-purple-300">https://*.trycloudflare.com</span>
+                    <button onclick="copyModalUrl()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-xs">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </div>
+                <p class="text-[11px] text-slate-400">
+                    <i class="fa-solid fa-lock text-emerald-400 mr-1"></i> 24/7 Cloudflare Encrypted Tunnel (Project Chhaya)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- GitHub Cloud Sync Modal -->
+    <div id="gitModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-left space-y-4 shadow-2xl relative">
+            <button onclick="closeGitModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-800 text-white flex items-center justify-center text-xl border border-slate-700">
+                    <i class="fa-brands fa-github"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-slate-100">GitHub Cloud Synchronization</h3>
+                    <p class="text-xs text-slate-400">Bidirectional Sync with Antigravity &amp; Cloud Actions</p>
+                </div>
+            </div>
+
+            <div class="space-y-2 bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs">
+                <div class="flex items-center justify-between py-1 border-b border-slate-900">
+                    <span class="text-slate-400"><i class="fa-solid fa-code-branch text-blue-400 mr-1.5"></i> Branch:</span>
+                    <span id="gitBranch" class="font-mono font-semibold text-blue-300">main</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-slate-900">
+                    <span class="text-slate-400"><i class="fa-brands fa-github text-slate-400 mr-1.5"></i> Remote Repo:</span>
+                    <a id="gitRemoteLink" href="https://github.com/thakoralpesh3/book-publishing-agent" target="_blank" class="font-mono text-purple-300 hover:underline truncate max-w-[200px]">thakoralpesh3/book-publishing-agent</a>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-slate-900">
+                    <span class="text-slate-400"><i class="fa-solid fa-file-pen text-amber-400 mr-1.5"></i> Uncommitted Changes:</span>
+                    <span id="gitChangesBadge" class="font-semibold text-slate-300">Checking...</span>
+                </div>
+                <div class="py-1">
+                    <span class="text-slate-400"><i class="fa-solid fa-clock-rotate-left text-emerald-400 mr-1.5"></i> Last Commit:</span>
+                    <p id="gitLastCommit" class="font-mono text-[11px] text-slate-300 mt-1 truncate">Loading...</p>
+                </div>
+            </div>
+
+            <!-- Optional Custom Commit Message Input -->
+            <div class="space-y-1.5">
+                <label class="text-xs font-semibold text-slate-300">Custom Commit Message (Optional):</label>
+                <input id="gitCommitInput" type="text" placeholder="Auto-generated if left empty..." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 focus:ring-2 focus:ring-blue-500">
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-2 flex gap-3">
+                <button onclick="executeGitSync()" id="btnGitSync" class="flex-1 py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition">
+                    <i class="fa-brands fa-github"></i>
+                    <span>Sync &amp; Push to GitHub</span>
+                </button>
+                <button onclick="fetchGitStatus()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition" title="Refresh Git Status">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+
+            <div id="gitSyncMessage" class="hidden text-xs p-2.5 rounded-lg border"></div>
+        </div>
+    </div>
+
+    <!-- Autonomous Background Pipeline Status Modal -->
+    <div id="backgroundModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-left space-y-4 shadow-2xl relative">
+            <button onclick="closeBackgroundModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-slate-100">Autonomous Background Pipeline</h3>
+                    <p class="text-xs text-slate-400">Step 4 Chained Multi-Agent Publishing</p>
+                </div>
+            </div>
+
+            <!-- Prerequisite Agents Status Grid -->
+            <div class="space-y-2 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                <div class="font-semibold text-slate-300 mb-1 flex items-center justify-between">
+                    <span>Prerequisite Agents Status:</span>
+                    <button onclick="fetchBackgroundStatus()" class="text-blue-400 hover:text-blue-300 text-[11px] flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-right"></i> Refresh
+                    </button>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-slate-900">
+                    <span class="text-slate-400"><i class="fa-solid fa-brain text-purple-400 mr-1.5"></i> Aradhya AI (Jarvis Daemon)</span>
+                    <span id="bgStatusAradhya" class="font-semibold text-slate-300">Checking...</span>
+                </div>
+                <div class="flex items-center justify-between py-1 border-b border-slate-900">
+                    <span class="text-slate-400"><i class="fa-brands fa-youtube text-red-500 mr-1.5"></i> YouTube Shorts AI</span>
+                    <span id="bgStatusYT" class="font-semibold text-slate-300">Checking...</span>
+                </div>
+                <div class="flex items-center justify-between py-1">
+                    <span class="text-slate-400"><i class="fa-solid fa-share-nodes text-pink-400 mr-1.5"></i> Social Media Stories AI</span>
+                    <span id="bgStatusSocial" class="font-semibold text-slate-300">Checking...</span>
+                </div>
+            </div>
+
+            <!-- PublisheR AI Quota Card -->
+            <div class="space-y-1.5 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
+                <div class="font-semibold text-slate-300 mb-1">PublisheR AI Daily Quota:</div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Today's Publishing Status:</span>
+                    <span id="bgStatusDailyState" class="font-semibold text-emerald-400">Ready</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Runs Today:</span>
+                    <span id="bgStatusRunsCount" class="font-mono text-slate-200">0 / 1</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Last Publication:</span>
+                    <span id="bgStatusLastBook" class="text-slate-300 truncate max-w-[180px]">None</span>
+                </div>
+            </div>
+
+            <!-- Trigger Action Buttons -->
+            <div class="flex flex-col sm:flex-row gap-2 pt-1">
+                <button onclick="triggerBackgroundPipeline(false)" id="bgRunDueBtn" class="flex-1 py-2.5 px-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow transition">
+                    <i class="fa-solid fa-play"></i> Run If Due
+                </button>
+                <button onclick="triggerBackgroundPipeline(true)" id="bgForceBtn" class="flex-1 py-2.5 px-3 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> Force Run Now
+                </button>
+            </div>
+            <p class="text-[11px] text-slate-500 text-center">Runs completely in the background without opening browser windows or interrupting your work.</p>
+        </div>
+    </div>
+
+    <!-- Post-Generation Publishing & Upload Suite Modal -->
+    <div id="postGenModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 sm:p-7 text-left space-y-5 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closePostGenModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 flex items-center justify-center text-2xl font-bold shadow-lg shadow-emerald-500/20">
+                    <i class="fa-solid fa-sparkles"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h3 class="font-bold text-lg text-slate-100">Book Generated Successfully!</h3>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-semibold">100% Zero-Mistake Certified</span>
+                    </div>
+                    <p id="postGenSubtitle" class="text-xs text-slate-400 mt-0.5">Ready for instant upload to Amazon KDP and Flipkart Seller Hub.</p>
+                </div>
+            </div>
+
+            <!-- Book Quick Details Card -->
+            <div class="p-4 bg-slate-950/80 rounded-xl border border-slate-800 space-y-2">
+                <div class="text-xs text-slate-400 flex items-center justify-between">
+                    <span class="font-semibold text-slate-200" id="postGenTitle">Book Title</span>
+                    <span class="font-mono text-purple-300 font-bold" id="postGenPages">24 Pages</span>
+                </div>
+                <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400 pt-1">
+                    <span><i class="fa-solid fa-file-pdf text-red-400 mr-1"></i> Interior PDF</span>
+                    <span><i class="fa-solid fa-image text-blue-400 mr-1"></i> Full-Wrap Cover</span>
+                    <span><i class="fa-solid fa-file-excel text-emerald-400 mr-1"></i> Flipkart Bulk XLSX</span>
+                    <span><i class="fa-solid fa-barcode text-amber-400 mr-1"></i> Valid ISBN-13</span>
+                </div>
+            </div>
+
+            <!-- Upload Action Cards Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <!-- Amazon KDP Upload Card -->
+                <div class="p-4 rounded-xl border border-amber-500/30 bg-slate-950 flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                            <i class="fa-brands fa-amazon text-lg"></i> Amazon KDP Upload
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Auto-navigates to KDP Bookshelf, injects Title, Subtitle, Author, HTML Description, and 7 Keywords, then attaches Interior &amp; Cover PDFs.
+                        </p>
+                    </div>
+                    <button onclick="launchUpload('kdp')" class="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-2 shadow-md transition">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Launch KDP Upload Assistant
+                    </button>
+                </div>
+
+                <!-- Flipkart Seller Hub Upload Card -->
+                <div class="p-4 rounded-xl border border-blue-500/30 bg-slate-950 flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center gap-2 text-blue-400 font-bold text-sm">
+                            <i class="fa-solid fa-cart-shopping text-base"></i> Flipkart Seller Hub
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">
+                            Opens Flipkart Seller Hub bulk catalog ingestion portal with pre-filled <span class="font-mono text-blue-300">flipkart_bulk_catalog.xlsx</span>.
+                        </p>
+                    </div>
+                    <div class="space-y-1.5">
+                        <button onclick="launchUpload('flipkart')" class="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-semibold rounded-lg text-xs flex items-center justify-center gap-2 shadow-md transition">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Open Flipkart Bulk Portal
+                        </button>
+                        <button onclick="openQuickCopyModal()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-semibold rounded-lg text-xs flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-clipboard-list text-emerald-400"></i> Flipkart 1-Tap Copy Wizard
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zero-Inventory Print-on-Demand Pathway -->
+            <div class="p-3 bg-emerald-950/20 border border-emerald-500/30 rounded-xl text-xs flex items-start gap-3">
+                <i class="fa-solid fa-truck-fast text-emerald-400 text-base mt-0.5"></i>
+                <div class="text-slate-300">
+                    <span class="font-semibold text-emerald-300">Zero-Inventory Fulfillment:</span>
+                    Upload the compiled interior PDF and cover wrap to <b>Notion Press</b> (notionpress.com) or <b>Pothi</b> (pothi.com) to auto-distribute simultaneously to Flipkart and Amazon India with zero inventory needed!
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-xs">
+                <button onclick="switchTab('metadata'); closePostGenModal();" class="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-eye"></i> View Full Metadata Dossier
+                </button>
+                <button onclick="closePostGenModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-semibold">
+                    Done
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Real-Time Upload Assistant Progress Modal -->
+    <div id="uploadProgressModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 sm:p-6 text-left space-y-4 shadow-2xl relative">
+            <button onclick="closeUploadProgressModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div id="uploadProgressIcon" class="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg animate-pulse">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <div>
+                    <h3 id="uploadProgressTitle" class="font-bold text-base text-slate-100">Upload Assistant Active</h3>
+                    <p id="uploadProgressSubtitle" class="text-xs text-slate-400">Autonomous browser assistant running...</p>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="space-y-1.5">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                    <span id="uploadStepText">Initializing...</span>
+                    <span id="uploadPercentText" class="font-mono text-blue-400 font-bold">0%</span>
+                </div>
+                <div class="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div id="uploadProgressBar" class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300" style="width: 5%"></div>
+                </div>
+            </div>
+
+            <!-- Live Streaming Log Box -->
+            <div class="space-y-1">
+                <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Live Activity Log:</span>
+                <div id="uploadLogsBox" class="h-44 bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] text-slate-300 overflow-y-auto space-y-1.5">
+                    <div class="text-slate-500">Connecting to browser engine...</div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1">
+                <span class="text-[11px] text-slate-500">Session stays active with persistent cookies.</span>
+                <button onclick="closeUploadProgressModal()" class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold">
+                    Close Monitor
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flipkart 1-Click Quick-Copy Listing Wizard Modal -->
+    <div id="quickCopyModal" class="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 hidden">
+        <div class="glass-card bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-5 sm:p-6 text-left space-y-4 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeQuickCopyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-xl">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-clipboard-check"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-slate-100">Flipkart 1-Tap Copy Listing Wizard</h3>
+                    <p class="text-xs text-slate-400">Click any field to copy to clipboard instantly. Paste directly into Flipkart Seller Hub single-listing form.</p>
+                </div>
+            </div>
+
+            <div id="quickCopyContent" class="space-y-3">
+                <!-- Populated dynamically via JS -->
+                <div class="text-center py-6 text-slate-500 text-xs">Loading listing attributes...</div>
+            </div>
+
+            <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+                <a id="quickCopyDownloadExcel" href="#" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-download"></i> Download Bulk Excel (.xlsx)
+                </a>
+                <button onclick="closeQuickCopyModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-16 md:bottom-6 right-4 sm:right-6 px-4 py-3 rounded-lg shadow-xl bg-slate-800 border border-slate-700 text-xs sm:text-sm text-slate-100 hidden flex items-center gap-2 z-50">
+        <i class="fa-solid fa-check text-emerald-400"></i> <span id="toastMsg">Notification</span>
+    </div>
+
+    <script>
+        let currentSlug = "";
+        let currentBookData = null;
+        let publicMobileUrl = "";
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toastMsg").innerText = msg;
+            toast.classList.remove("hidden");
+            setTimeout(() => toast.classList.add("hidden"), 3500);
+        }
+
+        function copyToClipboard(elementId) {
+            const el = document.getElementById(elementId);
+            const text = el.value !== undefined ? el.value : el.innerText;
+            navigator.clipboard.writeText(text).then(() => showToast("Copied to clipboard!"));
+        }
+
+        function copyKeywords() {
+            if (!currentBookData || !currentBookData.listing_metadata) return;
+            const kw = currentBookData.listing_metadata.amazon_kdp.backend_keywords.join(", ");
+            navigator.clipboard.writeText(kw).then(() => showToast("Copied all 7 Amazon keywords!"));
+        }
+
+        function copyModalUrl() {
+            if (!publicMobileUrl) return;
+            navigator.clipboard.writeText(publicMobileUrl).then(() => showToast("Public URL copied!"));
+        }
+
+        function switchTab(tabName) {
+            ['studio', 'metadata', 'files', 'uploader'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                const dt = document.getElementById(`tab-btn-${t}`);
+                if (dt) dt.classList.remove('active');
+            });
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            const activeDt = document.getElementById(`tab-btn-${tabName}`);
+            if (activeDt) activeDt.classList.add('active');
+
+            // Update mobile bottom bar active state
+            ['studio', 'amazon', 'flipkart', 'files', 'uploader'].forEach(m => {
+                const mb = document.getElementById(`m-btn-${m}`);
+                if (mb) mb.classList.remove('text-blue-400', 'text-amber-400', 'text-emerald-400', 'text-purple-400');
+            });
+            const curMb = document.getElementById(`m-btn-${tabName}`);
+            if (curMb) curMb.classList.add('text-blue-400');
+        }
+
+        function setAgentFilter(filter) {
+            ['all', 'amazon', 'flipkart'].forEach(f => {
+                const pill = document.getElementById(`agent-pill-${f}`);
+                if (pill) pill.classList.remove('active');
+            });
+            const activePill = document.getElementById(`agent-pill-${filter}`);
+            if (activePill) activePill.classList.add('active');
+
+            const amzCol = document.getElementById('agent-col-amazon');
+            const fkCol = document.getElementById('agent-col-flipkart');
+
+            if (filter === 'amazon') {
+                if (amzCol) amzCol.classList.remove('hidden');
+                if (fkCol) fkCol.classList.add('hidden');
+            } else if (filter === 'flipkart') {
+                if (amzCol) amzCol.classList.add('hidden');
+                if (fkCol) fkCol.classList.remove('hidden');
+            } else {
+                if (amzCol) amzCol.classList.remove('hidden');
+                if (fkCol) fkCol.classList.remove('hidden');
+            }
+        }
+
+        function openMobileModal() {
+            document.getElementById("mobileModal").classList.remove("hidden");
+        }
+
+        function closeMobileModal() {
+            document.getElementById("mobileModal").classList.add("hidden");
+        }
+
+        async function fetchMobileStatus() {
+            try {
+                const res = await fetch("/api/mobile/status");
+                const data = await res.json();
+                if (data.public_url) {
+                    publicMobileUrl = data.public_url;
+                    document.getElementById("modalPublicUrl").innerText = data.public_url;
+                }
+                const dot = document.getElementById("tunnelStatusDot");
+                if (data.has_public_tunnel) {
+                    dot.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                } else {
+                    dot.className = "w-2 h-2 rounded-full bg-amber-400";
+                }
+            } catch (err) {
+                console.debug("Mobile status fetch:", err);
+            }
+        }
+
+        function openGitModal() {
+            document.getElementById("gitModal").classList.remove("hidden");
+            fetchGitStatus();
+        }
+
+        function closeGitModal() {
+            document.getElementById("gitModal").classList.add("hidden");
+        }
+
+        async function fetchGitStatus() {
+            try {
+                const res = await fetch("/api/git/status");
+                const data = await res.json();
+                const dot = document.getElementById("gitSyncDot");
+                if (data.initialized) {
+                    document.getElementById("gitBranch").innerText = data.branch || "main";
+                    if (data.remote_url) {
+                        const link = document.getElementById("gitRemoteLink");
+                        link.innerText = data.remote_url.replace("https://github.com/", "").replace("git@github.com:", "").replace(".git", "");
+                        link.href = data.remote_url.startsWith("http") ? data.remote_url : `https://github.com/${link.innerText}`;
+                    }
+                    const badge = document.getElementById("gitChangesBadge");
+                    if (data.clean) {
+                        badge.innerHTML = `<span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check"></i> Clean (Synced)</span>`;
+                        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+                    } else {
+                        badge.innerHTML = `<span class="text-amber-400 font-semibold"><i class="fa-solid fa-triangle-exclamation"></i> ${data.total_changes} files to sync</span>`;
+                        if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+                    }
+                    if (data.last_commit && data.last_commit.hash) {
+                        document.getElementById("gitLastCommit").innerText = `[${data.last_commit.hash}] ${data.last_commit.message} (${data.last_commit.date.split(" ")[0]})`;
+                    } else {
+                        document.getElementById("gitLastCommit").innerText = "No commits yet";
+                    }
+                } else {
+                    document.getElementById("gitChangesBadge").innerText = "Git not initialized";
+                    if (dot) dot.className = "w-2 h-2 rounded-full bg-slate-500";
+                }
+            } catch (err) {
+                console.debug("Git status fetch:", err);
+            }
+        }
+
+        async function executeGitSync() {
+            const btn = document.getElementById("btnGitSync");
+            const msgBox = document.getElementById("gitSyncMessage");
+            const customMsg = document.getElementById("gitCommitInput").value.trim();
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Syncing to GitHub...</span>`;
+            msgBox.className = "hidden text-xs p-2.5 rounded-lg border";
+
+            try {
+                const res = await fetch("/api/git/sync", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: customMsg || null, pull_first: false })
+                });
+                const data = await res.json();
+                if (res.ok && data.success) {
+                    msgBox.className = "block text-xs p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300";
+                    msgBox.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 mr-1.5"></i> ${data.message || "Successfully synced to GitHub!"}`;
+                    document.getElementById("gitCommitInput").value = "";
+                    fetchGitStatus();
+                } else {
+                    msgBox.className = "block text-xs p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300";
+                    msgBox.innerHTML = `<i class="fa-solid fa-circle-exclamation text-red-400 mr-1.5"></i> ${data.detail || data.error || "Failed to sync"}`;
+                }
+            } catch (err) {
+                msgBox.className = "block text-xs p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300";
+                msgBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-red-400 mr-1.5"></i> Error connecting to server: ${err.message}`;
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        function openBackgroundModal() {
+            document.getElementById("backgroundModal").classList.remove("hidden");
+            fetchBackgroundStatus();
+        }
+
+        function closeBackgroundModal() {
+            document.getElementById("backgroundModal").classList.add("hidden");
+        }
+
+        async function fetchBackgroundStatus() {
+            try {
+                const res = await fetch("/api/background/status");
+                const data = await res.json();
+                if (data.status === "success") {
+                    const prereqs = data.prerequisites || {};
+                    const tracker = data.tracker || {};
+                    
+                    const aradhyaEl = document.getElementById("bgStatusAradhya");
+                    if (aradhyaEl) {
+                        aradhyaEl.innerHTML = prereqs.aradhya?.daemon_active 
+                            ? '<span class="text-emerald-400">● Daemon Active</span>' 
+                            : '<span class="text-slate-400">Idle / Inactive</span>';
+                    }
+                    const ytEl = document.getElementById("bgStatusYT");
+                    if (ytEl) {
+                        if (prereqs.youtube?.running) {
+                            ytEl.innerHTML = '<span class="text-amber-400">● Running Now</span>';
+                        } else if (prereqs.youtube?.completed_today) {
+                            ytEl.innerHTML = '<span class="text-emerald-400">✓ Finished Today</span>';
+                        } else {
+                            ytEl.innerHTML = '<span class="text-slate-400">Idle</span>';
+                        }
+                    }
+                    const socEl = document.getElementById("bgStatusSocial");
+                    if (socEl) {
+                        if (prereqs.social?.running) {
+                            socEl.innerHTML = '<span class="text-amber-400">● Running Now</span>';
+                        } else if (prereqs.social?.completed_today) {
+                            socEl.innerHTML = '<span class="text-emerald-400">✓ Finished Today</span>';
+                        } else {
+                            socEl.innerHTML = '<span class="text-slate-400">Idle</span>';
+                        }
+                    }
+
+                    const stateEl = document.getElementById("bgStatusDailyState");
+                    const dotEl = document.getElementById("bgStatusDot");
+                    if (stateEl) {
+                        if (!data.is_due) {
+                            stateEl.innerHTML = '<span class="text-blue-400">✓ Done for Today</span>';
+                            if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-blue-400";
+                        } else if (prereqs.prerequisites_finished) {
+                            stateEl.innerHTML = '<span class="text-emerald-400">● Ready to Auto-Run</span>';
+                            if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-emerald-400 animate-pulse";
+                        } else {
+                            stateEl.innerHTML = '<span class="text-slate-400">Waiting for Prereqs</span>';
+                            if (dotEl) dotEl.className = "w-2 h-2 rounded-full bg-slate-500";
+                        }
+                    }
+                    const runsEl = document.getElementById("bgStatusRunsCount");
+                    if (runsEl) {
+                        runsEl.innerText = `${tracker.runs_today_count || 0} / ${tracker.daily_limit || 1}`;
+                    }
+                    const bookEl = document.getElementById("bgStatusLastBook");
+                    if (bookEl) {
+                        bookEl.innerText = tracker.last_book_title || "None";
+                        bookEl.title = tracker.last_book_title || "None";
+                    }
+                }
+            } catch (err) {
+                console.debug("Background status fetch error:", err);
+            }
+        }
+
+        async function triggerBackgroundPipeline(force = false) {
+            showToast("Queuing Autonomous Background Pipeline...");
+            try {
+                const res = await fetch("/api/background/run", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ force: force })
+                });
+                const data = await res.json();
+                if (data.status === "queued") {
+                    showToast("Pipeline running headlessly in background!");
+                    setTimeout(fetchBackgroundStatus, 1500);
+                } else {
+                    showToast(data.message || "Pipeline skipped or error");
+                }
+            } catch (err) {
+                alert("Failed to trigger background pipeline: " + err.message);
+            }
+        }
+
+        async function refreshBooksList() {
+            try {
+                const res = await fetch("/api/books");
+                const data = await res.json();
+                const sel = document.getElementById("bookSelector");
+                sel.innerHTML = '<option value="">Select Existing Book...</option>';
+                data.books.forEach(b => {
+                    const opt = document.createElement("option");
+                    opt.value = b.slug;
+                    opt.innerText = b.title || b.slug;
+                    sel.appendChild(opt);
+                });
+                if (currentSlug) sel.value = currentSlug;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function loadSelectedBook() {
+            const sel = document.getElementById("bookSelector");
+            const slug = sel.value;
+            if (!slug) return;
+            currentSlug = slug;
+
+            try {
+                const res = await fetch(`/api/book/${slug}`);
+                const data = await res.json();
+                currentBookData = data;
+                renderBookDetails(data);
+                showToast(`Loaded: ${data.book_data.title || slug}`);
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function renderBookDetails(data) {
+            const meta = data.listing_metadata;
+            if (!meta || !meta.amazon_kdp) return;
+
+            document.getElementById("noBookSelectedAlert").classList.add("hidden");
+            document.getElementById("metadataContainer").classList.remove("hidden");
+
+            // Amazon KDP
+            const amz = meta.amazon_kdp;
+            document.getElementById("kdpTitle").innerText = amz.title || "";
+            document.getElementById("kdpSubtitle").innerText = amz.subtitle || "";
+            document.getElementById("kdpDescPreview").innerHTML = amz.html_description || "";
+            document.getElementById("kdpHtmlDesc").value = amz.html_description || "";
+
+            const kwContainer = document.getElementById("kdpKeywordsContainer");
+            kwContainer.innerHTML = "";
+            (amz.backend_keywords || []).forEach(k => {
+                const span = document.createElement("span");
+                span.className = "px-2 py-0.5 sm:px-2.5 sm:py-1 bg-slate-800 text-slate-200 text-xs rounded border border-slate-700";
+                span.innerText = k;
+                kwContainer.appendChild(span);
+            });
+
+            const catList = document.getElementById("kdpCategoriesList");
+            catList.innerHTML = "";
+            (amz.browse_categories || []).forEach(c => {
+                const li = document.createElement("li");
+                li.innerText = "• " + c;
+                catList.appendChild(li);
+            });
+
+            if (amz.pricing && amz.pricing.inr) {
+                document.getElementById("kdpPriceInr").innerText = `₹${amz.pricing.inr.ebook_list_price} eBook / ₹${amz.pricing.inr.paperback_list_price} Paperback`;
+            }
+            if (amz.pricing && amz.pricing.usd) {
+                document.getElementById("kdpPriceUsd").innerText = `$${amz.pricing.usd.ebook_list_price} eBook / $${amz.pricing.usd.paperback_list_price} Paperback`;
+            }
+
+            // Flipkart
+            const fk = meta.flipkart;
+            if (fk) {
+                document.getElementById("fkSku").innerText = fk.sku_id || "";
+                document.getElementById("fkIsbn").innerText = fk.isbn_13 || "";
+                document.getElementById("fkHsn").innerText = `${fk.hsn_code} (${fk.gst_rate_percent}% GST)`;
+                document.getElementById("fkBindingPages").innerText = `${fk.binding} • ${fk.number_of_pages} Pages`;
+                const dims = fk.dimensions_cm || {};
+                document.getElementById("fkSpecs").innerText = `${dims.length} x ${dims.breadth} x ${dims.height} cm | Weight: ${fk.weight_grams}g`;
+
+                const hlList = document.getElementById("fkHighlightsList");
+                hlList.innerHTML = "";
+                (fk.highlights || []).forEach(h => {
+                    const li = document.createElement("li");
+                    li.innerText = "• " + h;
+                    hlList.appendChild(li);
+                });
+                document.getElementById("fkHighlightsRaw").value = (fk.highlights || []).join("\n");
+                document.getElementById("fkSynopsis").innerText = fk.synopsis || "";
+                document.getElementById("fkMrp").innerText = `₹${fk.mrp_inr}`;
+                document.getElementById("fkSellingPrice").innerText = `₹${fk.selling_price_inr}`;
+            }
+
+            // Render Zero-Mistake Pre-Flight Audit
+            if (data.audit && Object.keys(data.audit).length > 0) {
+                renderAuditDetails(data.audit);
+            } else if (currentSlug) {
+                fetch(`/api/validate/${currentSlug}`)
+                    .then(r => r.json())
+                    .then(audit => {
+                        data.audit = audit;
+                        renderAuditDetails(audit);
+                    })
+                    .catch(console.error);
+            }
+
+            // Render Files
+            renderFilesList(data);
+        }
+
+        function renderAuditDetails(audit) {
+            const banner = document.getElementById("zeroMistakeAuditBanner");
+            const uploaderBanner = document.getElementById("uploaderAuditBanner");
+            if (!banner) return;
+
+            if (!audit || !audit.total_checks_count) {
+                banner.classList.add("hidden");
+                if (uploaderBanner) uploaderBanner.classList.add("hidden");
+                return;
+            }
+            banner.classList.remove("hidden");
+            if (uploaderBanner) uploaderBanner.classList.remove("hidden");
+
+            const isCertified = audit.zero_mistake_certified;
+            const score = audit.compliance_score || "0%";
+            const passed = audit.passed_checks_count || 0;
+            const total = audit.total_checks_count || 0;
+
+            const statusBadge = document.getElementById("auditStatusBadge");
+            const scoreBadge = document.getElementById("auditScoreBadge");
+            const amzReady = document.getElementById("auditAmzStatus");
+            const fkReady = document.getElementById("auditFkStatus");
+            const podReady = document.getElementById("auditPodStatus");
+            const checklistContainer = document.getElementById("auditChecklistContainer");
+
+            if (isCertified) {
+                statusBadge.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400"></i> 100% Certified`;
+                statusBadge.className = "px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-emerald-500/20";
+                scoreBadge.className = "text-lg sm:text-xl font-extrabold text-emerald-400";
+            } else {
+                statusBadge.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400"></i> ${audit.issues_count} Issue(s) Detected`;
+                statusBadge.className = "px-2.5 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-xs font-bold flex items-center gap-1.5 shadow-sm shadow-amber-500/20";
+                scoreBadge.className = "text-lg sm:text-xl font-extrabold text-amber-400";
+            }
+            scoreBadge.innerText = `${score} (${passed}/${total})`;
+
+            const readiness = audit.platform_readiness || {};
+            amzReady.innerHTML = readiness.amazon_kdp_ready ? 
+                `<i class="fa-brands fa-amazon text-amber-400 text-base"></i> <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check text-xs"></i> Amazon KDP: 100% Ready</span>` : 
+                `<i class="fa-brands fa-amazon text-amber-400 text-base"></i> <span class="text-amber-400 font-semibold"><i class="fa-solid fa-xmark text-xs"></i> Amazon KDP: Needs Review</span>`;
+
+            fkReady.innerHTML = readiness.flipkart_ready ? 
+                `<i class="fa-solid fa-cart-shopping text-blue-400 text-base"></i> <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check text-xs"></i> Flipkart Hub: 100% Ready</span>` : 
+                `<i class="fa-solid fa-cart-shopping text-blue-400 text-base"></i> <span class="text-amber-400 font-semibold"><i class="fa-solid fa-xmark text-xs"></i> Flipkart Hub: Needs Review</span>`;
+
+            podReady.innerHTML = readiness.pod_aggregators_ready ? 
+                `<i class="fa-solid fa-print text-emerald-400 text-base"></i> <span class="text-emerald-400 font-semibold"><i class="fa-solid fa-check text-xs"></i> POD Aggregators: 100% Ready</span>` : 
+                `<i class="fa-solid fa-print text-emerald-400 text-base"></i> <span class="text-amber-400 font-semibold"><i class="fa-solid fa-xmark text-xs"></i> POD Aggregators: Needs Review</span>`;
+
+            // Checklist rendering
+            if (checklistContainer) {
+                checklistContainer.innerHTML = "";
+                (audit.passed_checks || []).forEach(chk => {
+                    const row = document.createElement("div");
+                    row.className = "flex items-start gap-2 text-xs text-slate-300 py-1 border-b border-slate-800/60";
+                    row.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mt-0.5"></i> <div><span class="font-semibold text-slate-200">${chk.name}:</span> <span class="text-slate-400">${chk.detail}</span></div>`;
+                    checklistContainer.appendChild(row);
+                });
+                (audit.issues || []).forEach(issue => {
+                    const row = document.createElement("div");
+                    row.className = "flex items-start gap-2 text-xs text-rose-300 py-1 border-b border-slate-800/60 bg-rose-500/10 px-2 rounded";
+                    row.innerHTML = `<i class="fa-solid fa-xmark text-rose-400 mt-0.5"></i> <div><span class="font-bold text-rose-300">Issue:</span> <span>${issue}</span></div>`;
+                    checklistContainer.appendChild(row);
+                });
+                (audit.warnings || []).forEach(warn => {
+                    const row = document.createElement("div");
+                    row.className = "flex items-start gap-2 text-xs text-amber-300 py-1 border-b border-slate-800/60 bg-amber-500/10 px-2 rounded";
+                    row.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i> <div><span class="font-bold text-amber-300">Warning:</span> <span>${warn}</span></div>`;
+                    checklistContainer.appendChild(row);
+                });
+            }
+
+            // Update Uploader banner
+            const uploaderStatus = document.getElementById("uploaderAuditStatus");
+            if (uploaderStatus) {
+                uploaderStatus.innerHTML = isCertified ? 
+                    `<span class="text-emerald-300 font-semibold flex items-center gap-2"><i class="fa-solid fa-shield-check text-emerald-400 text-base"></i> Pre-Flight Certified: 100% Rejection-Free for Amazon & Flipkart (${score})</span>` : 
+                    `<span class="text-amber-300 font-semibold flex items-center gap-2"><i class="fa-solid fa-triangle-exclamation text-amber-400 text-base"></i> Pre-Flight Audit: ${audit.issues_count} issue(s) need attention</span>`;
+            }
+        }
+
+        function toggleAuditChecklist() {
+            const details = document.getElementById("auditChecklistDetails");
+            const icon = document.getElementById("auditToggleIcon");
+            if (details) {
+                details.classList.toggle("hidden");
+                if (icon) {
+                    icon.classList.toggle("fa-chevron-down");
+                    icon.classList.toggle("fa-chevron-up");
+                }
+            }
+        }
+
+        async function revalidateCurrentBook() {
+            if (!currentSlug) return;
+            try {
+                showToast("Running 25-Point Zero-Mistake Audit...");
+                const res = await fetch(`/api/validate/${currentSlug}`);
+                const audit = await res.json();
+                if (currentBookData) {
+                    currentBookData.audit = audit;
+                }
+                renderAuditDetails(audit);
+                showToast(`Audit Completed: ${audit.compliance_score} Compliance Score`);
+            } catch (err) {
+                console.error(err);
+                showToast("Audit failed", true);
+            }
+        }
+
+        function renderFilesList(data) {
+            const container = document.getElementById("filesListContainer");
+            container.innerHTML = "";
+
+            const fileDefinitions = [
+                {
+                    key: "manuscript_interior_pdf",
+                    filename: "manuscript_interior.pdf",
+                    name: "Interior Manuscript PDF",
+                    desc: "Print-ready interior with 6x9 trim, gutter margins, running headers & pagination.",
+                    icon: "fa-file-pdf",
+                    color: "text-red-400"
+                },
+                {
+                    key: "cover_full_wrap_pdf",
+                    filename: "cover_full_wrap.pdf",
+                    name: "Full-Wrap Cover (PDF)",
+                    desc: "Back cover + spine + front cover with 0.125 inch bleed & barcode zone.",
+                    icon: "fa-file-pdf",
+                    color: "text-red-400"
+                },
+                {
+                    key: "cover_front_jpg",
+                    filename: "cover_front.jpg",
+                    name: "Front Cover Image (JPG)",
+                    desc: "High-res (1600x2560 px) graphic for Kindle and Flipkart catalog image.",
+                    icon: "fa-file-image",
+                    color: "text-sky-400"
+                },
+                {
+                    key: "flipkart_bulk_catalog_xlsx",
+                    filename: "flipkart_bulk_catalog.xlsx",
+                    name: "Flipkart Bulk Catalog (.xlsx)",
+                    desc: "Official Flipkart Seller Hub Books vertical spreadsheet, pre-filled for 1-click upload.",
+                    icon: "fa-file-excel",
+                    color: "text-emerald-400"
+                },
+                {
+                    key: "amazon_kdp_listing_sheet_md",
+                    filename: "amazon_kdp_listing_sheet.md",
+                    name: "Amazon KDP Listing Pack (.md)",
+                    desc: "Organized markdown sheet with pre-formatted 1-click copy blocks for all KDP fields.",
+                    icon: "fa-file-lines",
+                    color: "text-amber-400"
+                },
+                {
+                    key: "pod_distribution_manifest_json",
+                    filename: "pod_distribution_manifest.json",
+                    name: "POD Aggregator Bundle (.json)",
+                    desc: "Distribution manifest for Notion Press, Pothi, or IngramSpark zero-inventory distribution.",
+                    icon: "fa-box-open",
+                    color: "text-purple-400"
+                }
+            ];
+
+            fileDefinitions.forEach(f => {
+                const card = document.createElement("div");
+                card.className = "p-3.5 sm:p-4 bg-slate-900/90 rounded-xl border border-slate-800 space-y-2.5 sm:space-y-3 flex flex-col justify-between";
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fa-solid ${f.icon} ${f.color} text-base sm:text-lg"></i>
+                            <h4 class="font-semibold text-xs sm:text-sm text-slate-100">${f.name}</h4>
+                        </div>
+                        <p class="text-xs text-slate-400">${f.desc}</p>
+                    </div>
+                    <a href="/api/download/${data.slug}/${f.filename}" download class="inline-flex items-center justify-center gap-2 w-full py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-lg transition border border-slate-700">
+                        <i class="fa-solid fa-download"></i> Download ${f.filename}
+                    </a>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        let allCachedTrends = [];
+        let currentTrendCategory = 'all';
+
+        async function fetchDailyTrends(category = 'all', query = '') {
+            currentTrendCategory = category;
+            try {
+                const params = new URLSearchParams();
+                if (category && category !== 'all') params.append('category', category);
+                if (query && query.trim()) params.append('q', query.trim());
+                const res = await fetch(`/api/trends?${params.toString()}`);
+                const data = await res.json();
+                if (data.status === 'success') {
+                    allCachedTrends = data.trends;
+                    renderTrendsGrid(data.trends);
+                }
+            } catch (err) {
+                console.error("Failed to load daily trends:", err);
+            }
+        }
+
+        function filterTrendsCategory(cat) {
+            currentTrendCategory = cat;
+            const pills = document.querySelectorAll("#trendCategoryPills button");
+            pills.forEach(p => {
+                p.classList.remove("bg-blue-600", "text-white");
+                p.classList.add("bg-slate-800", "text-slate-300");
+            });
+            const activeBtn = document.getElementById(`trend-cat-${cat}`);
+            if (activeBtn) {
+                activeBtn.classList.remove("bg-slate-800", "text-slate-300");
+                activeBtn.classList.add("bg-blue-600", "text-white");
+            }
+            const q = document.getElementById("trendSearchInput") ? document.getElementById("trendSearchInput").value : "";
+            fetchDailyTrends(cat, q);
+        }
+
+        let searchDebounceTimeout = null;
+        function handleTrendSearch(val) {
+            clearTimeout(searchDebounceTimeout);
+            searchDebounceTimeout = setTimeout(() => {
+                fetchDailyTrends(currentTrendCategory, val);
+            }, 250);
+        }
+
+        function renderTrendsGrid(trends) {
+            const grid = document.getElementById("trendsGrid");
+            if (!grid) return;
+            grid.innerHTML = "";
+
+            if (!trends || trends.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full p-6 text-center text-slate-400 text-xs glass-card">
+                        <i class="fa-solid fa-magnifying-glass text-xl text-slate-500 mb-2"></i>
+                        <p>No trends match the current filter. Try selecting "All Trends" or searching for "drawing", "rich", or "habits".</p>
+                    </div>
+                `;
+                return;
+            }
+
+            trends.forEach(t => {
+                const card = document.createElement("div");
+                const isKids = (t.category === 'kids' || t.book_type === 'activity_drawing');
+                const isWealth = (t.category === 'wealth');
+                const borderAccent = isKids ? 'border-amber-500/30' : (isWealth ? 'border-emerald-500/30' : 'border-sky-500/30');
+
+                card.className = `p-3.5 sm:p-4 bg-slate-900/90 rounded-xl border ${borderAccent} flex flex-col justify-between space-y-3 hover:border-amber-400/60 transition shadow-md`;
+                
+                let signalsHtml = '';
+                if (t.amazon_signals && t.amazon_signals[0]) {
+                    signalsHtml += `<div class="text-[11px] text-amber-300 flex items-start gap-1.5"><i class="fa-brands fa-amazon mt-0.5 text-amber-400"></i> <span class="line-clamp-1">${t.amazon_signals[0]}</span></div>`;
+                }
+                if (t.flipkart_signals && t.flipkart_signals[0]) {
+                    signalsHtml += `<div class="text-[11px] text-sky-300 flex items-start gap-1.5"><i class="fa-solid fa-cart-shopping mt-0.5 text-blue-400"></i> <span class="line-clamp-1">${t.flipkart_signals[0]}</span></div>`;
+                }
+
+                card.innerHTML = `
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between gap-1.5">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/30">
+                                ${t.badge || 'Bestseller Trend'}
+                            </span>
+                            <span class="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                                <i class="fa-solid fa-fire text-amber-400"></i> ${t.demand_score}/100
+                            </span>
+                        </div>
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-100 line-clamp-2">${t.title}</h4>
+                        <p class="text-[11px] text-slate-400 line-clamp-2">${t.subtitle || ''}</p>
+                        <div class="flex flex-wrap items-center gap-1.5 pt-1 text-[10px]">
+                            <span class="px-2 py-0.5 bg-slate-800 text-slate-300 rounded border border-slate-700 font-medium">
+                                ${t.suggested_trim_size || '6x9'} ${t.book_type === 'activity_drawing' ? '🎨 Drawing' : '📘 Non-Fiction'}
+                            </span>
+                            <span class="px-2 py-0.5 bg-emerald-950/60 text-emerald-300 rounded border border-emerald-800/40 font-medium">
+                                ${t.competition_score || 'Low'} Comp
+                            </span>
+                            <span class="px-2 py-0.5 bg-purple-950/60 text-purple-300 rounded border border-purple-800/40 font-medium">
+                                ${t.profit_potential || 'High'} Profit
+                            </span>
+                        </div>
+                        <div class="pt-1.5 space-y-1 border-t border-slate-800/80">
+                            ${signalsHtml}
+                        </div>
+                    </div>
+                    <button onclick="applyTrend('${t.id}')" class="w-full py-2 px-3 bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-amber-600/30 hover:from-blue-600/50 hover:to-amber-600/50 border border-slate-700 hover:border-amber-400/60 text-slate-100 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition shadow-sm">
+                        <i class="fa-solid fa-bolt text-amber-400"></i> Auto-Fill &amp; Generate This Trend
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function applyTrend(trendId) {
+            const trend = allCachedTrends.find(t => t.id === trendId);
+            if (!trend) return;
+
+            document.getElementById("topicInput").value = trend.topic || trend.title;
+            document.getElementById("audienceInput").value = trend.target_audience || "General Readers";
+            document.getElementById("chaptersInput").value = trend.suggested_chapters || 5;
+            
+            if (trend.book_type) {
+                document.getElementById("bookTypeInput").value = trend.book_type;
+            } else if (trend.category === 'kids') {
+                document.getElementById("bookTypeInput").value = 'activity_drawing';
+            } else {
+                document.getElementById("bookTypeInput").value = 'standard';
+            }
+
+            if (trend.suggested_trim_size) {
+                document.getElementById("trimSizeInput").value = trend.suggested_trim_size;
+            } else if (trend.book_type === 'activity_drawing') {
+                document.getElementById("trimSizeInput").value = '8.5x11';
+            }
+
+            // Scroll down to generation form and highlight
+            const formCard = document.getElementById("customGenerationCard");
+            if (formCard) {
+                formCard.scrollIntoView({ behavior: 'smooth' });
+                formCard.classList.add("ring-2", "ring-amber-400");
+                setTimeout(() => {
+                    formCard.classList.remove("ring-2", "ring-amber-400");
+                }, 2000);
+            }
+            showToast(`Loaded trend: ${trend.title.slice(0, 45)}... Ready to generate!`);
+        }
+
+        function handleBookTypeChange(val) {
+            const trimSelect = document.getElementById("trimSizeInput");
+            if (!trimSelect) return;
+            if (val === "activity_drawing") {
+                trimSelect.value = "8.5x11";
+            } else if (val === "standard") {
+                trimSelect.value = "6x9";
+            }
+        }
+
+        async function scoutLiveTrends() {
+            const btn = document.getElementById("scoutTrendsBtn");
+            const icon = document.getElementById("scoutIcon");
+            if (btn) btn.disabled = true;
+            if (icon) icon.classList.add("animate-spin");
+
+            showToast("Scouting live Amazon & Flipkart daily trends with Gemini...");
+            try {
+                const res = await fetch("/api/trends/refresh", { method: "POST" });
+                const data = await res.json();
+                if (data.status === "success" || data.status === "partial") {
+                    await fetchDailyTrends(currentTrendCategory);
+                    showToast(`Refreshed ${data.count || 7} trending publishing niches!`);
+                } else {
+                    showToast("Loaded current trend intelligence.");
+                }
+            } catch (err) {
+                alert("Failed to refresh trends: " + err.message);
+            } finally {
+                if (btn) btn.disabled = false;
+                if (icon) icon.classList.remove("animate-spin");
+            }
+        }
+
+        let uploadPollInterval = null;
+
+        function openPostGenModal(data) {
+            document.getElementById("postGenTitle").innerText = data.title || "Generated Book";
+            document.getElementById("postGenPages").innerText = (data.pages || 24) + " Pages Compiled";
+            document.getElementById("postGenModal").classList.remove("hidden");
+        }
+
+        function closePostGenModal() {
+            document.getElementById("postGenModal").classList.add("hidden");
+        }
+
+        function openUploadProgressModal(jobId, platform) {
+            const modal = document.getElementById("uploadProgressModal");
+            const title = document.getElementById("uploadProgressTitle");
+            const subtitle = document.getElementById("uploadProgressSubtitle");
+            const stepText = document.getElementById("uploadStepText");
+            const percentText = document.getElementById("uploadPercentText");
+            const bar = document.getElementById("uploadProgressBar");
+            const logsBox = document.getElementById("uploadLogsBox");
+
+            title.innerText = `${platform.toUpperCase()} Upload Assistant Active`;
+            subtitle.innerText = `Connecting and automating ${platform.toUpperCase()} publishing flow...`;
+            stepText.innerText = "Connecting to session...";
+            percentText.innerText = "5%";
+            bar.style.width = "5%";
+            logsBox.innerHTML = `<div class="text-slate-500">Connecting to ${platform.toUpperCase()} Assistant (Job: ${jobId})...</div>`;
+
+            modal.classList.remove("hidden");
+
+            if (uploadPollInterval) clearInterval(uploadPollInterval);
+            uploadPollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`/api/upload/status/${jobId}`);
+                    if (!res.ok) return;
+                    const job = await res.json();
+
+                    stepText.innerText = job.current_step || "Processing...";
+                    const pct = Math.max(5, job.progress || 0);
+                    percentText.innerText = pct + "%";
+                    bar.style.width = pct + "%";
+
+                    if (job.logs && job.logs.length > 0) {
+                        logsBox.innerHTML = job.logs.map(l => `<div><span class="text-slate-500">[${l.time}]</span> <span class="${l.message.includes('Error') || l.message.includes('fail') ? 'text-red-400' : 'text-slate-300'}">${escapeHtml(l.message)}</span></div>`).join("");
+                        logsBox.scrollTop = logsBox.scrollHeight;
+                    }
+
+                    if (job.status === "completed") {
+                        clearInterval(uploadPollInterval);
+                        uploadPollInterval = null;
+                        stepText.innerText = "✅ Upload session completed!";
+                        percentText.innerText = "100%";
+                        bar.style.width = "100%";
+                        showToast(`${platform.toUpperCase()} upload flow complete!`);
+                    } else if (job.status === "failed") {
+                        clearInterval(uploadPollInterval);
+                        uploadPollInterval = null;
+                        stepText.innerText = "❌ Upload encountered an issue";
+                        showToast(`Upload error: ${job.error || 'Failed'}`);
+                    }
+                } catch (e) {
+                    console.error("Polling upload status error:", e);
+                }
+            }, 1500);
+        }
+
+        function closeUploadProgressModal() {
+            if (uploadPollInterval) {
+                clearInterval(uploadPollInterval);
+                uploadPollInterval = null;
+            }
+            document.getElementById("uploadProgressModal").classList.add("hidden");
+        }
+
+        async function openQuickCopyModal() {
+            if (!currentSlug) {
+                alert("Please select or generate a book first!");
+                return;
+            }
+            const modal = document.getElementById("quickCopyModal");
+            const content = document.getElementById("quickCopyContent");
+            const dlLink = document.getElementById("quickCopyDownloadExcel");
+
+            modal.classList.remove("hidden");
+            content.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs"><i class="fa-solid fa-spinner animate-spin mr-2"></i> Loading Flipkart listing attributes...</div>`;
+            dlLink.href = `/api/download/${currentSlug}/flipkart_bulk_catalog.xlsx`;
+
+            try {
+                const res = await fetch(`/api/upload/quick_copy/${currentSlug}`);
+                if (!res.ok) throw new Error("Could not load Flipkart attributes");
+                const q = await res.json();
+
+                content.innerHTML = `
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div class="p-2.5 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between">
+                            <div><span class="text-slate-400">ISBN-13:</span> <span class="font-mono text-amber-300 font-bold ml-1">${q.isbn_13 || 'N/A'}</span></div>
+                            <button onclick="copyToClipboard('${q.isbn_13}', 'ISBN-13')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+                        <div class="p-2.5 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between">
+                            <div><span class="text-slate-400">HSN Code:</span> <span class="font-mono text-emerald-300 font-bold ml-1">${q.hsn_code || '4901.10.00'}</span> (0% GST)</div>
+                            <button onclick="copyToClipboard('${q.hsn_code}', 'HSN Code')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+                        <div class="p-2.5 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between">
+                            <div><span class="text-slate-400">MRP:</span> <span class="font-bold text-slate-100 ml-1">₹${q.mrp}</span> | <span class="text-slate-400">Selling Price:</span> <span class="font-bold text-emerald-400 ml-1">₹${q.selling_price}</span></div>
+                            <button onclick="copyToClipboard('${q.selling_price}', 'Selling Price')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]"><i class="fa-regular fa-copy"></i> Copy Price</button>
+                        </div>
+                        <div class="p-2.5 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between">
+                            <div><span class="text-slate-400">Dimensions:</span> <span class="font-mono text-slate-200 ml-1">${q.dimensions_cm}</span></div>
+                            <button onclick="copyToClipboard('${q.dimensions_cm}', 'Dimensions')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]"><i class="fa-regular fa-copy"></i> Copy</button>
+                        </div>
+                        <div class="p-2.5 bg-slate-950 rounded-lg border border-slate-800 flex items-center justify-between sm:col-span-2">
+                            <div><span class="text-slate-400">Package Weight:</span> <span class="font-bold text-slate-200 ml-1">${q.weight_grams} grams</span> | <span class="text-slate-400">Format:</span> <span class="text-slate-200 ml-1">${q.binding} (${q.pages} pages)</span></div>
+                            <button onclick="copyToClipboard('${q.weight_grams}', 'Weight')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]"><i class="fa-regular fa-copy"></i> Copy Weight</button>
+                        </div>
+                    </div>
+
+                    <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-300">Product Highlights (Bullet Points):</span>
+                            <button onclick="copyToClipboard(document.getElementById('qHighlightsText').innerText, 'Highlights')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]"><i class="fa-regular fa-copy"></i> Copy All Highlights</button>
+                        </div>
+                        <pre id="qHighlightsText" class="p-2 bg-slate-900 rounded text-[11px] text-slate-300 whitespace-pre-wrap font-sans">${q.highlights_formatted || '• English\n• Paperback\n• 1st Edition'}</pre>
+                    </div>
+
+                    <div class="p-3 bg-slate-950 rounded-lg border border-slate-800 text-xs space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="font-semibold text-slate-300">Book Description / Synopsis:</span>
+                            <button onclick="copyToClipboard(document.getElementById('qSynopsisText').innerText, 'Synopsis')" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded text-[11px]"><i class="fa-regular fa-copy"></i> Copy Synopsis</button>
+                        </div>
+                        <p id="qSynopsisText" class="p-2 bg-slate-900 rounded text-[11px] text-slate-300 max-h-24 overflow-y-auto leading-relaxed">${escapeHtml(q.synopsis || '')}</p>
+                    </div>
+                `;
+            } catch (err) {
+                content.innerHTML = `<div class="p-4 bg-red-950/30 text-red-300 text-xs rounded-lg border border-red-500/30">Failed to load quick-copy data: ${err.message}</div>`;
+            }
+        }
+
+        function closeQuickCopyModal() {
+            document.getElementById("quickCopyModal").classList.add("hidden");
+        }
+
+        function copyToClipboard(text, label) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast(`Copied ${label || 'text'} to clipboard!`);
+            }).catch(() => {
+                showToast(`Could not copy automatically. Select and copy.`);
+            });
+        }
+
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        async function handleCreateBook(e) {
+            e.preventDefault();
+            const topic = document.getElementById("topicInput").value.trim();
+            if (!topic) return;
+
+            const audience = document.getElementById("audienceInput").value.trim();
+            const chapters = parseInt(document.getElementById("chaptersInput").value) || 5;
+            const author = document.getElementById("authorInput").value.trim();
+            const publisher = document.getElementById("publisherInput").value.trim();
+            const trimSize = document.getElementById("trimSizeInput").value;
+            const bookType = document.getElementById("bookTypeInput").value;
+            const autoUpload = document.getElementById("autoUploadInput") ? document.getElementById("autoUploadInput").value : "";
+
+            document.getElementById("progressCard").classList.remove("hidden");
+            document.getElementById("generateBtn").disabled = true;
+            document.getElementById("generateBtn").classList.add("opacity-50");
+
+            try {
+                const res = await fetch("/api/create_book", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        topic: topic,
+                        target_audience: audience,
+                        target_chapters: chapters,
+                        author_name: author,
+                        publisher_name: publisher,
+                        trim_size: trimSize,
+                        book_type: bookType,
+                        auto_upload: autoUpload
+                    })
+                });
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || "Generation failed");
+                }
+
+                const data = await res.json();
+                currentSlug = data.slug;
+                await refreshBooksList();
+                await loadSelectedBook();
+
+                showToast("Book and listings generated successfully!");
+
+                // If auto-upload was requested and job created, launch monitor
+                if (data.auto_upload_job_id) {
+                    openUploadProgressModal(data.auto_upload_job_id, autoUpload);
+                } else {
+                    // Open post-generation upload action modal!
+                    openPostGenModal(data);
+                }
+
+            } catch (err) {
+                alert("Error generating book: " + err.message);
+            } finally {
+                document.getElementById("progressCard").classList.add("hidden");
+                document.getElementById("generateBtn").disabled = false;
+                document.getElementById("generateBtn").classList.remove("opacity-50");
+            }
+        }
+
+        async function launchUpload(platform) {
+            if (!currentSlug) {
+                alert("Please select or generate a book first!");
+                return;
+            }
+            closePostGenModal();
+            showToast(`Launching ${platform.toUpperCase()} Assistant...`);
+            try {
+                const res = await fetch("/api/upload/start", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        slug: currentSlug,
+                        platform: platform,
+                        headless: false,
+                        auto_advance: true
+                    })
+                });
+                const data = await res.json();
+                if (data.job_id) {
+                    openUploadProgressModal(data.job_id, platform);
+                } else {
+                    showToast(`${platform.toUpperCase()} session initiated.`);
+                }
+            } catch (err) {
+                alert("Failed to launch upload assistant: " + err.message);
+            }
+        }
+
+        window.onload = () => {
+            fetchDailyTrends();
+            refreshBooksList();
+            fetchMobileStatus();
+            fetchBackgroundStatus();
+            fetchGitStatus();
+            // Automatically select the existing sample book if available
+            setTimeout(() => {
+                const sel = document.getElementById("bookSelector");
+                if (sel && sel.options.length > 1 && !currentSlug) {
+                    sel.selectedIndex = 1;
+                    loadSelectedBook();
+                }
+            }, 600);
+        };
+    </script>
+</body>
+</html>
+

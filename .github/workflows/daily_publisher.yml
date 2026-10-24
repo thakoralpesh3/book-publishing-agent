@@ -1,0 +1,128 @@
+name: PublisheR AI • Cloud Book Publishing Pipeline
+
+on:
+  schedule:
+    # Runs daily at 02:00 UTC (07:30 AM IST)
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      topic:
+        description: 'Custom Book Topic (leave empty to auto-pick from daily Amazon/Flipkart trends)'
+        required: false
+        default: ''
+        type: string
+      category:
+        description: 'Trending Category (if topic empty)'
+        required: true
+        default: 'kids'
+        type: choice
+        options:
+          - kids
+          - wealth
+          - self-help
+          - tech
+          - business
+      chapters:
+        description: 'Number of Chapters'
+        required: true
+        default: '5'
+        type: string
+      trim_size:
+        description: 'Trim Size'
+        required: true
+        default: '6x9'
+        type: choice
+        options:
+          - '6x9'
+          - '8.5x11'
+          - '5.5x8.5'
+      book_type:
+        description: 'Book Structure Type'
+        required: true
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - standard
+          - activity_drawing
+          - workbook_journal
+
+jobs:
+  publish-book:
+    name: Generate Publication-Grade Book
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y fonts-dejavu-core fonts-liberation
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Book Publishing Engine
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DEFAULT_AUTHOR: "Alpesh Patel"
+          DEFAULT_PUBLISHER: "InspireBooks Press"
+          DEFAULT_MARKETPLACE: "Amazon.in"
+          PYTHONUNBUFFERED: "1"
+        run: |
+          if [ -n "${{ github.event.inputs.topic }}" ]; then
+            echo "Generating book for custom topic: ${{ github.event.inputs.topic }}"
+            python3 main.py generate "${{ github.event.inputs.topic }}" \
+              --chapters ${{ github.event.inputs.chapters || '5' }} \
+              --trim-size ${{ github.event.inputs.trim_size || '6x9' }} \
+              --book-type ${{ github.event.inputs.book_type || 'auto' }}
+          else
+            echo "Generating book from daily ${{ github.event.inputs.category || 'kids' }} trends..."
+            python3 main.py run-background --force --category "${{ github.event.inputs.category || 'kids' }}"
+          fi
+
+      - name: Run Preflight Zero-Mistake Audit
+        run: |
+          echo "Verifying generated books with 25-point Preflight Validator..."
+          python3 -c "
+          from pathlib import Path
+          from core.preflight_validator import PreflightValidator
+          
+          out_dir = Path('output')
+          books = [p for p in out_dir.iterdir() if p.is_dir() and (p / 'metadata.json').exists()]
+          if not books:
+              print('⚠️ No new books found to validate.')
+          else:
+              for b in books:
+                  print(f'Auditing {b.name}...')
+                  res = PreflightValidator.audit_book_directory(b)
+                  print(f'Score: {res.compliance_score}% | Certified: {res.certified}')
+                  if not res.certified:
+                      print('Critical errors:', res.critical_errors)
+                      exit(1)
+          print('✅ All generated books passed Zero-Mistake Preflight Audit!')
+          "
+
+      - name: Upload Generated Book Artifacts (PDFs, Catalogs, Dossiers)
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-books-${{ github.run_number }}
+          path: |
+            output/**/*.pdf
+            output/**/*.jpg
+            output/**/*.xlsx
+            output/**/*.md
+            output/**/metadata.json
+            output/**/preflight_audit_report.json
+          retention-days: 30

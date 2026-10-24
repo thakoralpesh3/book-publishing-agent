@@ -1,0 +1,48 @@
+# ==============================================================================
+# PublisheR AI • Git Ignore & Secret Shield
+# Prevents accidental leaking of API keys, tokens, sessions, logs, and outputs
+# ==============================================================================
+
+# Credentials & API Keys
+.env
+.env.*
+!.env.example
+
+# Large Executable Binaries
+bin/cloudflared
+
+# Local Run Logs & Systemd Runtimes
+*.log
+data/*.log
+data/*.pid
+data/public_url.txt
+data/test_*.png
+data/tunnel.log
+publisher_systemd.log
+
+# Browser Sessions & Playwright Profiles
+.cache/
+assets/browser_profiles/
+
+# Local Generated Books & Catalogs
+output/*
+!output/.gitkeep
+
+# Python Virtual Environments & Bytecode
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.pytest_cache/
+.coverage
+htmlcov/
+
+# Operating System & IDE Artifacts
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
