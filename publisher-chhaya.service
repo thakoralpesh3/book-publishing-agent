@@ -9,6 +9,7 @@ ExecStart=/usr/bin/python3 /home/alpesh/book-publishing-agent/mobile_gateway.py
 Restart=always
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
+Environment="PATH=/home/alpesh/.local/bin:/home/alpesh/bin:/usr/local/bin:/usr/bin:/bin"
 StandardOutput=append:/home/alpesh/book-publishing-agent/data/gateway_systemd.log
 StandardError=append:/home/alpesh/book-publishing-agent/data/gateway_systemd.log
 

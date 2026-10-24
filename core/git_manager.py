@@ -12,7 +12,31 @@ import logging
 
 logger = logging.getLogger("GitManager")
 
+import shutil
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Ensure ~/.local/bin and common user bin directories are in PATH
+_user_local_bin = str(Path.home() / ".local" / "bin")
+if _user_local_bin not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = f"{_user_local_bin}:{os.environ.get('PATH', '')}"
+
+def _find_git_binary() -> str:
+    """Finds the git executable across PATH and known user locations."""
+    found = shutil.which("git")
+    if found:
+        return found
+    for candidate in [
+        str(Path.home() / ".local" / "bin" / "git"),
+        "/usr/local/bin/git",
+        "/usr/bin/git",
+        "/bin/git"
+    ]:
+        if Path(candidate).is_file() and os.access(candidate, os.X_OK):
+            return candidate
+    return "git"
+
+GIT_BIN = _find_git_binary()
 
 
 class GitManager:
@@ -20,11 +44,12 @@ class GitManager:
 
     def __init__(self, repo_dir: Optional[Path] = None):
         self.repo_dir = repo_dir or BASE_DIR
+        self.git_bin = GIT_BIN
 
     def _run_git(self, args: List[str], timeout: int = 30) -> subprocess.CompletedProcess:
         """Runs a git command inside the repository directory."""
         return subprocess.run(
-            ["git"] + args,
+            [self.git_bin] + args,
             cwd=str(self.repo_dir),
             capture_output=True,
             text=True,
@@ -93,12 +118,12 @@ class GitManager:
         modified = []
         deleted = []
 
-        if status_res.returncode == 0 and status_res.stdout.strip():
-            for line in status_res.stdout.strip().split("\n"):
-                if not line.strip():
+        if status_res.returncode == 0 and status_res.stdout:
+            for raw_line in status_res.stdout.splitlines():
+                if len(raw_line) < 4:
                     continue
-                code = line[:2].strip()
-                path = line[3:].strip()
+                code = raw_line[:2].strip()
+                path = raw_line[3:].strip()
                 changed.append({"status": code, "path": path})
                 if "?" in code:
                     untracked.append(path)
