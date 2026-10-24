@@ -58,6 +58,10 @@ GEMINI_4_ARGON_SPECS = {
 OUTPUT_DIR = Path(os.environ.get("OUTPUT_DIR", str(BASE_DIR / "output")))
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+# Data directory for persistent queues, state, and cache
+DATA_DIR = Path(os.environ.get("DATA_DIR", str(BASE_DIR / "data")))
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
 # Amazon KDP Specifications
 AMAZON_KDP = {
     "MAX_TITLE_CHARS": 200,

@@ -277,6 +277,14 @@ def main():
     fk_p = subparsers.add_parser("upload-flipkart", help="Launch Flipkart Seller Hub assistant")
     fk_p.add_argument("--slug", type=str, required=True, help="Book slug")
 
+    # Pending upload commands
+    pending_p = subparsers.add_parser("pending-uploads", help="View saved pending/failed uploads awaiting retry")
+    pending_p.add_argument("--json", action="store_true", help="Output raw JSON")
+
+    retry_p = subparsers.add_parser("retry-pending", help="Retry pending uploads when platforms are online")
+    retry_p.add_argument("--slug", type=str, default=None, help="Specific book slug to retry")
+    retry_p.add_argument("--force", action="store_true", help="Force retry bypassing backoff timer")
+
     # Git sync commands
     sync_p = subparsers.add_parser("git-sync", help="Synchronize and push changes to GitHub")
     sync_p.add_argument("-m", "--message", type=str, default=None, help="Commit message")
@@ -406,6 +414,54 @@ def main():
         assistant = FlipkartAssistant()
         res = assistant.launch_assisted_session(book_dir, headless=False)
         print("\nFlipkart Assistant Result:", res["status"])
+
+    elif args.command == "pending-uploads":
+        from uploader.pending_queue import pending_queue
+        items = pending_queue.list_items()
+        if getattr(args, "json", False):
+            import json
+            print(json.dumps(items, indent=2))
+            return
+
+        print("\n" + "=" * 75)
+        print("💾  PUBLISHER AI — PENDING & OFFLINE UPLOAD QUEUE  💾")
+        print("=" * 75)
+        if not items:
+            print("✅ No pending uploads. All book publications are completed and up to date!\n")
+            return
+
+        print(f"Total Pending Items: {len(items)}\n")
+        for idx, it in enumerate(items, 1):
+            plat_icon = "📦 Amazon KDP" if it["platform"] == "kdp" else "🛒 Flipkart"
+            print(f"{idx}. [{plat_icon}] {it.get('title')} (slug: {it.get('slug')})")
+            print(f"   Status:        {it.get('status').upper()} (Retry attempt #{it.get('retry_count')})")
+            print(f"   Error Reason:  {it.get('error_reason')}")
+            print(f"   Saved At:      {it.get('created_at')}")
+            artifacts = it.get("artifacts", {})
+            int_pdf = "✓" if artifacts.get("interior_pdf") else "✗"
+            cov_pdf = "✓" if artifacts.get("cover_pdf") else "✗"
+            print(f"   Saved Assets:  Interior PDF [{int_pdf}] | Cover Wrap [{cov_pdf}]")
+            print("-" * 75)
+        print("💡 Run 'python3 main.py retry-pending' to retry all when platforms are online.\n")
+
+    elif args.command == "retry-pending":
+        from uploader.pending_queue import pending_queue
+        health = pending_queue.check_platform_health()
+        print("\nChecking platform health...")
+        for p, h in health.items():
+            print(f"  [{'✓' if h else '✗'}] {p.upper()}: {'Online & Reachable' if h else 'Unreachable'}")
+
+        print("\nProcessing pending upload queue...")
+        res = pending_queue.process_pending_queue(force=args.force)
+        if res.get("status") == "empty":
+            print("✅ No pending uploads to process.")
+        else:
+            print(f"🚀 Dispatched {res.get('dispatched_count', 0)} upload job(s):")
+            for d in res.get("dispatched", []):
+                print(f"  • {d['slug']} ({d['platform'].upper()}) -> Job ID: {d['job_id']}")
+            for s in res.get("skipped", []):
+                print(f"  • {s['slug']}: Skipped ({s['reason']})")
+        print()
 
     elif args.command == "git-sync":
         from core.git_manager import GitManager

@@ -91,6 +91,13 @@
                     <span id="gitSyncDot" class="w-2 h-2 rounded-full bg-slate-400"></span>
                 </button>
 
+                <!-- Pending Uploads Button -->
+                <button onclick="openPendingModal()" class="flex-1 md:flex-none px-3.5 py-2 bg-gradient-to-r from-amber-600/30 to-orange-600/30 hover:from-amber-600/40 hover:to-orange-600/40 border border-amber-500/40 text-amber-200 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition" title="Saved &amp; Pending Uploads">
+                    <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
+                    <span>Pending Uploads</span>
+                    <span id="pendingBadge" class="hidden px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">0</span>
+                </button>
+
                 <!-- Existing Books Selector -->
                 <div class="flex items-center gap-2 flex-1 md:flex-none">
                     <select id="bookSelector" onchange="loadSelectedBook()" class="w-full md:w-auto bg-slate-900 border border-slate-700 text-xs sm:text-sm rounded-lg px-3 py-2 text-slate-200 focus:ring-2 focus:ring-blue-500">
@@ -657,6 +664,54 @@
         </div>
     </div>
 
+    <!-- Pending & Offline Uploads Modal -->
+    <div id="pendingModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-6 text-left space-y-4 shadow-2xl relative max-h-[90vh] flex flex-col">
+            <button onclick="closePendingModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl border border-amber-500/30">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-slate-100">Saved &amp; Pending Uploads</h3>
+                    <p class="text-xs text-slate-400">Offline &amp; Interrupted Book Uploads Auto-Recovery</p>
+                </div>
+            </div>
+
+            <!-- Platform Health Indicators -->
+            <div class="flex items-center justify-between p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs">
+                <span class="text-slate-400 text-[11px] font-semibold">Platform Connectivity:</span>
+                <div class="flex items-center gap-3">
+                    <span id="healthKdp" class="flex items-center gap-1 text-[11px] text-slate-300">
+                        <i class="fa-solid fa-circle text-[8px] text-slate-500"></i> Amazon KDP
+                    </span>
+                    <span id="healthFlipkart" class="flex items-center gap-1 text-[11px] text-slate-300">
+                        <i class="fa-solid fa-circle text-[8px] text-slate-500"></i> Flipkart
+                    </span>
+                </div>
+            </div>
+
+            <!-- Queue Container -->
+            <div id="pendingQueueList" class="flex-1 overflow-y-auto space-y-2.5 pr-1 min-h-[160px] max-h-[360px]">
+                <p class="text-xs text-slate-400 text-center py-6">Checking pending queue...</p>
+            </div>
+
+            <!-- Action Controls -->
+            <div class="pt-2 border-t border-slate-800 flex items-center gap-3">
+                <button onclick="retryAllPendingUploads()" id="btnRetryAllPending" class="flex-1 py-2.5 px-4 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-lg transition">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Retry All Pending Uploads</span>
+                </button>
+                <button onclick="fetchPendingUploads()" class="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition" title="Refresh Pending Queue">
+                    <i class="fa-solid fa-rotate-right"></i>
+                </button>
+            </div>
+            <div id="pendingActionMsg" class="hidden text-xs p-2.5 rounded-lg border"></div>
+        </div>
+    </div>
+
     <!-- Autonomous Background Pipeline Status Modal -->
     <div id="backgroundModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 text-left space-y-4 shadow-2xl relative">
@@ -1162,6 +1217,200 @@
                 }
             } catch (err) {
                 alert("Failed to trigger background pipeline: " + err.message);
+            }
+        }
+
+        function openPendingModal() {
+            document.getElementById("pendingModal").classList.remove("hidden");
+            fetchPendingUploads();
+        }
+
+        function closePendingModal() {
+            document.getElementById("pendingModal").classList.add("hidden");
+        }
+
+        async function fetchPendingUploads() {
+            try {
+                const res = await fetch("/api/upload/pending");
+                const data = await res.json();
+                
+                // Update Badge
+                const badge = document.getElementById("pendingBadge");
+                if (badge) {
+                    if (data.pending_count > 0) {
+                        badge.innerText = data.pending_count;
+                        badge.classList.remove("hidden");
+                    } else {
+                        badge.classList.add("hidden");
+                    }
+                }
+
+                // Update Health Dots
+                const hKdp = document.getElementById("healthKdp");
+                if (hKdp) {
+                    if (data.platform_health && data.platform_health.kdp) {
+                        hKdp.innerHTML = `<i class="fa-solid fa-circle text-[8px] text-emerald-400"></i> Amazon KDP <span class="text-emerald-400 text-[10px]">(Online)</span>`;
+                    } else {
+                        hKdp.innerHTML = `<i class="fa-solid fa-circle text-[8px] text-red-400"></i> Amazon KDP <span class="text-red-400 text-[10px]">(Unreachable)</span>`;
+                    }
+                }
+                const hFlip = document.getElementById("healthFlipkart");
+                if (hFlip) {
+                    if (data.platform_health && data.platform_health.flipkart) {
+                        hFlip.innerHTML = `<i class="fa-solid fa-circle text-[8px] text-emerald-400"></i> Flipkart <span class="text-emerald-400 text-[10px]">(Online)</span>`;
+                    } else {
+                        hFlip.innerHTML = `<i class="fa-solid fa-circle text-[8px] text-red-400"></i> Flipkart <span class="text-red-400 text-[10px]">(Unreachable)</span>`;
+                    }
+                }
+
+                // Render Item List
+                const listEl = document.getElementById("pendingQueueList");
+                if (!listEl) return;
+
+                if (!data.items || data.items.length === 0) {
+                    listEl.innerHTML = `
+                        <div class="text-center py-8 text-slate-500 text-xs">
+                            <i class="fa-solid fa-circle-check text-emerald-400 text-3xl mb-2"></i>
+                            <p class="font-semibold text-slate-300">No pending uploads in queue</p>
+                            <p class="text-[11px] text-slate-500 mt-1">If an upload encounters platform downtime or captchas, contents are automatically preserved here.</p>
+                        </div>`;
+                    return;
+                }
+
+                listEl.innerHTML = data.items.map(item => {
+                    const isKdp = item.platform === "kdp";
+                    const platBadge = isKdp 
+                        ? `<span class="bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded font-bold uppercase"><i class="fa-brands fa-amazon mr-1"></i>KDP</span>`
+                        : `<span class="bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] px-2 py-0.5 rounded font-bold uppercase"><i class="fa-solid fa-store mr-1"></i>Flipkart</span>`;
+                    
+                    let statusBadge = "";
+                    if (item.status === "in_progress") {
+                        statusBadge = `<span class="text-blue-400 text-[10px] font-semibold"><i class="fa-solid fa-spinner fa-spin mr-1"></i>Uploading...</span>`;
+                    } else if (item.status === "completed") {
+                        statusBadge = `<span class="text-emerald-400 text-[10px] font-semibold"><i class="fa-solid fa-check mr-1"></i>Completed</span>`;
+                    } else {
+                        statusBadge = `<span class="text-amber-400 text-[10px] font-semibold"><i class="fa-solid fa-clock-rotate-left mr-1"></i>Pending (Attempt #${item.attempts || 1})</span>`;
+                    }
+
+                    const lastTime = item.last_attempt ? item.last_attempt.replace("T", " ").substring(0, 16) : "Never";
+                    const errMsg = item.failure_reason ? `<div class="text-[11px] text-red-300 bg-red-950/40 border border-red-800/40 rounded p-1.5 font-mono truncate" title="${item.failure_reason}"><i class="fa-solid fa-triangle-exclamation mr-1 text-red-400"></i>${item.failure_reason}</div>` : "";
+
+                    return `
+                        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 hover:border-slate-700 transition flex flex-col gap-2">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex items-center gap-2">
+                                    ${platBadge}
+                                    <h4 class="font-bold text-xs text-slate-200 truncate max-w-[220px]" title="${item.title || item.slug}">${item.title || item.slug}</h4>
+                                </div>
+                                <div>${statusBadge}</div>
+                            </div>
+                            ${errMsg}
+                            <div class="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                                <span><i class="fa-regular fa-clock mr-1"></i>Last Try: ${lastTime}</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="retryPendingUpload('${item.id}')" class="px-2.5 py-1 bg-amber-600/30 hover:bg-amber-600 text-amber-200 hover:text-white rounded text-[11px] font-semibold flex items-center gap-1 transition">
+                                        <i class="fa-solid fa-rotate-right"></i> Retry
+                                    </button>
+                                    <button onclick="deletePendingUpload('${item.id}')" class="px-2 py-1 bg-slate-800 hover:bg-red-900/60 text-slate-400 hover:text-red-300 rounded text-[11px] transition" title="Dismiss">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+            } catch (err) {
+                console.debug("Pending queue fetch error:", err);
+            }
+        }
+
+        async function retryPendingUpload(queueId) {
+            const msgBox = document.getElementById("pendingActionMsg");
+            if (msgBox) {
+                msgBox.className = "block text-xs p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300";
+                msgBox.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1.5"></i> Launching upload retry...`;
+            }
+
+            try {
+                const res = await fetch("/api/upload/retry_pending", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ queue_id: queueId, force: true })
+                });
+                const data = await res.json();
+                if (res.ok && data.status === "started") {
+                    if (msgBox) {
+                        msgBox.className = "block text-xs p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300";
+                        msgBox.innerHTML = `<i class="fa-solid fa-check mr-1.5"></i> Retry job started (Job ID: ${data.job_id.substring(0, 8)}...)`;
+                    }
+                    if (typeof openUploadProgressModal === "function") {
+                        openUploadProgressModal(data.job_id, data.slug);
+                    }
+                    fetchPendingUploads();
+                } else {
+                    if (msgBox) {
+                        msgBox.className = "block text-xs p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300";
+                        msgBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i> ${data.detail || data.message || "Retry failed to start"}`;
+                    }
+                }
+            } catch (err) {
+                if (msgBox) {
+                    msgBox.className = "block text-xs p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300";
+                    msgBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Error: ${err.message}`;
+                }
+            }
+        }
+
+        async function retryAllPendingUploads() {
+            const btn = document.getElementById("btnRetryAllPending");
+            const msgBox = document.getElementById("pendingActionMsg");
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Checking Platforms &amp; Retrying...</span>`;
+
+            try {
+                const res = await fetch("/api/upload/retry_pending", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ force: false })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    const started = data.started_jobs ? data.started_jobs.length : 0;
+                    const skipped = data.skipped_offline ? data.skipped_offline.length : 0;
+                    if (msgBox) {
+                        msgBox.className = "block text-xs p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-300";
+                        msgBox.innerHTML = `<i class="fa-solid fa-circle-check mr-1.5"></i> Retried ${data.attempted || 0} items (${started} started, ${skipped} waiting for platform health)`;
+                    }
+                    fetchPendingUploads();
+                } else {
+                    if (msgBox) {
+                        msgBox.className = "block text-xs p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300";
+                        msgBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i> ${data.detail || "Retry error"}`;
+                    }
+                }
+            } catch (err) {
+                if (msgBox) {
+                    msgBox.className = "block text-xs p-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-300";
+                    msgBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Error: ${err.message}`;
+                }
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+        }
+
+        async function deletePendingUpload(queueId) {
+            try {
+                const res = await fetch(`/api/upload/pending/${queueId}`, { method: "DELETE" });
+                if (res.ok) {
+                    fetchPendingUploads();
+                } else {
+                    alert("Failed to remove item from queue.");
+                }
+            } catch (err) {
+                alert("Error deleting pending item: " + err.message);
             }
         }
 
@@ -1891,6 +2140,8 @@
             fetchMobileStatus();
             fetchBackgroundStatus();
             fetchGitStatus();
+            fetchPendingUploads();
+            setInterval(fetchPendingUploads, 30000);
             // Automatically select the existing sample book if available
             setTimeout(() => {
                 const sel = document.getElementById("bookSelector");

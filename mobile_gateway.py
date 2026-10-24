@@ -299,6 +299,14 @@ class MobileGatewayWatchdog:
                 if iteration % 12 == 0:
                     trim_process_memory()
 
+                # 4. Periodically auto-retry pending uploads when platforms/network are healthy (~5 minutes)
+                if iteration % 30 == 0:
+                    try:
+                        from uploader.pending_queue import pending_queue
+                        pending_queue.process_pending_queue()
+                    except Exception as pq_e:
+                        logger.debug(f"Pending queue auto-retry check: {pq_e}")
+
             except KeyboardInterrupt:
                 logger.info("Mobile Gateway received shutdown signal.")
                 break

@@ -326,6 +326,15 @@ class BackgroundPublishingOrchestrator:
                 urgency="normal"
             )
 
+            # Auto-process pending upload queue for any previously failed uploads
+            try:
+                from uploader.pending_queue import pending_queue
+                pending_res = pending_queue.process_pending_queue()
+                if pending_res.get("dispatched_count", 0) > 0:
+                    logger.info(f"Auto-recovery: Dispatched {pending_res['dispatched_count']} previously pending upload(s).")
+            except Exception as pq_err:
+                logger.warning(f"Pending queue auto-recovery notice: {pq_err}")
+
             logger.info("=" * 70)
             logger.info(f"✨ [PublisheR AI] Daily Book Successfully Generated: {book_data['title']}")
             logger.info(f"📁 Directory: {book_dir}")

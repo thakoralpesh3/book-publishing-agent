@@ -429,6 +429,61 @@ async def trigger_flipkart_upload(slug: str):
         logger.exception("Flipkart assistant error")
         return {"status": "error", "message": str(e)}
 
+class RetryPendingRequest(BaseModel):
+    queue_id: Optional[str] = None
+    force: bool = False
+
+@app.get("/api/upload/pending")
+async def get_pending_uploads_endpoint():
+    """Returns all pending/failed upload queue items and current platform health."""
+    from uploader.pending_queue import pending_queue
+    items = pending_queue.list_items()
+    health = pending_queue.check_platform_health()
+    return {
+        "pending_count": len([i for i in items if i.get("status") == "pending"]),
+        "total_items": len(items),
+        "platform_health": health,
+        "items": items
+    }
+
+@app.post("/api/upload/retry_pending")
+async def retry_pending_uploads_endpoint(req: Optional[RetryPendingRequest] = None):
+    """Triggers retry of pending upload items when platforms are reachable."""
+    from uploader.pending_queue import pending_queue
+    from uploader.upload_manager import start_upload_job
+
+    force = req.force if req else False
+    target_id = req.queue_id if req else None
+
+    if target_id:
+        item = pending_queue.get_item(target_id)
+        if not item:
+            raise HTTPException(status_code=404, detail=f"Pending item '{target_id}' not found")
+        plat = item["platform"]
+        if not force and not pending_queue.is_platform_healthy(plat):
+            raise HTTPException(status_code=503, detail=f"Platform {plat.upper()} is currently unreachable. Will auto-retry once online.")
+        pending_queue.mark_in_progress(target_id)
+        job_id = start_upload_job(
+            slug=item["slug"],
+            platform=plat,
+            headless=False if os.environ.get("DISPLAY") else True,
+            auto_advance=True
+        )
+        return {"status": "started", "job_id": job_id, "queue_id": target_id, "slug": item["slug"]}
+
+    # Process all pending items
+    res = pending_queue.process_pending_queue(force=force)
+    return res
+
+@app.delete("/api/upload/pending/{queue_id}")
+async def delete_pending_upload_endpoint(queue_id: str):
+    """Dismisses/deletes an item from the pending upload queue."""
+    from uploader.pending_queue import pending_queue
+    deleted = pending_queue.delete_item(queue_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Pending queue item not found")
+    return {"status": "success", "message": f"Deleted {queue_id}"}
+
 class GitSyncRequest(BaseModel):
     message: Optional[str] = None
     pull_first: bool = False
