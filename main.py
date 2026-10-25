@@ -245,6 +245,7 @@ def main():
 
     # Generate command
     gen_p = subparsers.add_parser("generate", help="Generate book and listings via CLI")
+    gen_p.add_argument("pos_topic", nargs="?", default=None, help="Book topic or concept (positional)")
     gen_p.add_argument("--topic", type=str, default=None, help="Book topic or concept")
     gen_p.add_argument("--trend", type=str, default=None, help="ID of trend from trend radar to generate")
     gen_p.add_argument("--book-type", type=str, default="auto", choices=["auto", "standard", "activity_drawing", "workbook_journal"], help="Book structure type")
@@ -309,7 +310,7 @@ def main():
         run_refresh_trends_cli()
 
     elif args.command == "generate":
-        topic = args.topic
+        topic = args.topic or args.pos_topic
         chapters = args.chapters
         trim_size = args.trim_size
         book_type = args.book_type

@@ -112,7 +112,7 @@ jobs:
         run: |
           if [ -n "${{ inputs.topic }}" ]; then
             echo "Generating book for custom topic: ${{ inputs.topic }}"
-            python3 main.py generate "${{ inputs.topic }}" \
+            python3 main.py generate --topic "${{ inputs.topic }}" \
               --chapters ${{ inputs.chapters || '5' }} \
               --trim-size ${{ inputs.trim_size || '6x9' }} \
               --book-type ${{ inputs.book_type || 'auto' }}
