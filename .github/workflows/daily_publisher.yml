@@ -22,6 +22,16 @@ on:
           - self-help
           - tech
           - business
+      model:
+        description: 'Gemini Model'
+        required: true
+        default: 'gemini-4-argon'
+        type: choice
+        options:
+          - 'gemini-4-argon'
+          - 'gemini-3.7-flash'
+          - 'gemini-3.8-flash'
+          - 'gemini-3.5-flash'
       chapters:
         description: 'Number of Chapters'
         required: true
@@ -46,9 +56,24 @@ on:
           - standard
           - activity_drawing
           - workbook_journal
+      author:
+        description: 'Author Name'
+        required: false
+        default: 'Alpesh Patel'
+        type: string
+      publisher:
+        description: 'Publisher Name'
+        required: false
+        default: 'InspireBooks Press'
+        type: string
+      create_release:
+        description: 'Publish as GitHub Release with downloadable PDFs'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   publish-book:
@@ -79,8 +104,9 @@ jobs:
       - name: Run Book Publishing Engine
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          DEFAULT_AUTHOR: "Alpesh Patel"
-          DEFAULT_PUBLISHER: "InspireBooks Press"
+          GEMINI_MODEL: ${{ github.event.inputs.model || 'gemini-4-argon' }}
+          DEFAULT_AUTHOR: ${{ github.event.inputs.author || 'Alpesh Patel' }}
+          DEFAULT_PUBLISHER: ${{ github.event.inputs.publisher || 'InspireBooks Press' }}
           DEFAULT_MARKETPLACE: "Amazon.in"
           PYTHONUNBUFFERED: "1"
         run: |
@@ -99,22 +125,41 @@ jobs:
         run: |
           echo "Verifying generated books with 25-point Preflight Validator..."
           python3 -c "
+          import os, json
           from pathlib import Path
           from core.preflight_validator import PreflightValidator
           
           out_dir = Path('output')
           books = [p for p in out_dir.iterdir() if p.is_dir() and (p / 'metadata.json').exists()]
+          
+          summary_lines = ['# 📚 PublisheR AI • Cloud Publication Report', '']
+          summary_lines.append(f'**Run Number:** \`${{ github.run_number }}\` | **Model:** \`${{ github.event.inputs.model || \"gemini-4-argon\" }}\`')
+          summary_lines.append('')
+          summary_lines.append('| Book Title | Format / Trim | Status | Preflight Score |')
+          summary_lines.append('|---|---|---|---|')
+
           if not books:
               print('⚠️ No new books found to validate.')
+              summary_lines.append('| None | - | No Books Generated | - |')
           else:
               for b in books:
                   print(f'Auditing {b.name}...')
                   res = PreflightValidator.audit_book_directory(b)
+                  meta = json.loads((b / 'metadata.json').read_text(encoding='utf-8'))
+                  title = meta.get('title', b.name)
+                  trim = meta.get('trim_size', '6x9')
+                  cert_badge = '✅ Certified' if res.certified else '❌ Failed'
+                  summary_lines.append(f'| **{title}** | {trim} | {cert_badge} | **{res.compliance_score}%** |')
                   print(f'Score: {res.compliance_score}% | Certified: {res.certified}')
                   if not res.certified:
                       print('Critical errors:', res.critical_errors)
                       exit(1)
+                      
           print('✅ All generated books passed Zero-Mistake Preflight Audit!')
+          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
+          if summary_path:
+              with open(summary_path, 'a', encoding='utf-8') as f:
+                  f.write('\n'.join(summary_lines) + '\n')
           "
 
       - name: Upload Generated Book Artifacts (PDFs, Catalogs, Dossiers)
@@ -129,3 +174,19 @@ jobs:
             output/**/metadata.json
             output/**/preflight_audit_report.json
           retention-days: 30
+
+      - name: Publish GitHub Release with Downloadable Book Files
+        if: github.event.inputs.create_release != 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG_NAME="book-run-${{ github.run_number }}"
+          TITLE="PublisheR AI • Book Release #${{ github.run_number }}"
+          FILES=$(find output -type f \( -name "*.pdf" -o -name "*.jpg" -o -name "*.xlsx" -o -name "*.md" -o -name "metadata.json" \))
+          if [ -n "$FILES" ]; then
+            echo "Publishing release $TAG_NAME with files:"
+            echo "$FILES"
+            gh release create "$TAG_NAME" $FILES \
+              --title "$TITLE" \
+              --notes "Autonomous book publication run #${{ github.run_number }}. Certified by 25-point Zero-Mistake Preflight Audit." || echo "Release creation skipped or already exists."
+          fi
