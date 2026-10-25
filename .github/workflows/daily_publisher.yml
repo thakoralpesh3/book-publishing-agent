@@ -104,63 +104,29 @@ jobs:
       - name: Run Book Publishing Engine
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ github.event.inputs.model || 'gemini-4-argon' }}
-          DEFAULT_AUTHOR: ${{ github.event.inputs.author || 'Alpesh Patel' }}
-          DEFAULT_PUBLISHER: ${{ github.event.inputs.publisher || 'InspireBooks Press' }}
+          GEMINI_MODEL: ${{ inputs.model || 'gemini-4-argon' }}
+          DEFAULT_AUTHOR: ${{ inputs.author || 'Alpesh Patel' }}
+          DEFAULT_PUBLISHER: ${{ inputs.publisher || 'InspireBooks Press' }}
           DEFAULT_MARKETPLACE: "Amazon.in"
           PYTHONUNBUFFERED: "1"
         run: |
-          if [ -n "${{ github.event.inputs.topic }}" ]; then
-            echo "Generating book for custom topic: ${{ github.event.inputs.topic }}"
-            python3 main.py generate "${{ github.event.inputs.topic }}" \
-              --chapters ${{ github.event.inputs.chapters || '5' }} \
-              --trim-size ${{ github.event.inputs.trim_size || '6x9' }} \
-              --book-type ${{ github.event.inputs.book_type || 'auto' }}
+          if [ -n "${{ inputs.topic }}" ]; then
+            echo "Generating book for custom topic: ${{ inputs.topic }}"
+            python3 main.py generate "${{ inputs.topic }}" \
+              --chapters ${{ inputs.chapters || '5' }} \
+              --trim-size ${{ inputs.trim_size || '6x9' }} \
+              --book-type ${{ inputs.book_type || 'auto' }}
           else
-            echo "Generating book from daily ${{ github.event.inputs.category || 'kids' }} trends..."
-            python3 main.py run-background --force --category "${{ github.event.inputs.category || 'kids' }}"
+            echo "Generating book from daily ${{ inputs.category || 'kids' }} trends..."
+            python3 main.py run-background --force --category "${{ inputs.category || 'kids' }}"
           fi
 
       - name: Run Preflight Zero-Mistake Audit
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          CHOSEN_MODEL: ${{ inputs.model || 'gemini-4-argon' }}
         run: |
-          echo "Verifying generated books with 25-point Preflight Validator..."
-          python3 -c "
-          import os, json
-          from pathlib import Path
-          from core.preflight_validator import PreflightValidator
-          
-          out_dir = Path('output')
-          books = [p for p in out_dir.iterdir() if p.is_dir() and (p / 'metadata.json').exists()]
-          
-          summary_lines = ['# 📚 PublisheR AI • Cloud Publication Report', '']
-          summary_lines.append(f'**Run Number:** \`${{ github.run_number }}\` | **Model:** \`${{ github.event.inputs.model || \"gemini-4-argon\" }}\`')
-          summary_lines.append('')
-          summary_lines.append('| Book Title | Format / Trim | Status | Preflight Score |')
-          summary_lines.append('|---|---|---|---|')
-
-          if not books:
-              print('⚠️ No new books found to validate.')
-              summary_lines.append('| None | - | No Books Generated | - |')
-          else:
-              for b in books:
-                  print(f'Auditing {b.name}...')
-                  res = PreflightValidator.audit_book_directory(b)
-                  meta = json.loads((b / 'metadata.json').read_text(encoding='utf-8'))
-                  title = meta.get('title', b.name)
-                  trim = meta.get('trim_size', '6x9')
-                  cert_badge = '✅ Certified' if res.certified else '❌ Failed'
-                  summary_lines.append(f'| **{title}** | {trim} | {cert_badge} | **{res.compliance_score}%** |')
-                  print(f'Score: {res.compliance_score}% | Certified: {res.certified}')
-                  if not res.certified:
-                      print('Critical errors:', res.critical_errors)
-                      exit(1)
-                      
-          print('✅ All generated books passed Zero-Mistake Preflight Audit!')
-          summary_path = os.environ.get('GITHUB_STEP_SUMMARY')
-          if summary_path:
-              with open(summary_path, 'a', encoding='utf-8') as f:
-                  f.write('\n'.join(summary_lines) + '\n')
-          "
+          python3 scripts/cloud_audit_summary.py
 
       - name: Upload Generated Book Artifacts (PDFs, Catalogs, Dossiers)
         uses: actions/upload-artifact@v4
@@ -176,7 +142,7 @@ jobs:
           retention-days: 30
 
       - name: Publish GitHub Release with Downloadable Book Files
-        if: github.event.inputs.create_release != 'false'
+        if: ${{ inputs.create_release != false }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
