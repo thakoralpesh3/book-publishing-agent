@@ -47,6 +47,9 @@ on:
           - activity_drawing
           - workbook_journal
 
+permissions:
+  contents: read
+
 jobs:
   publish-book:
     name: Generate Publication-Grade Book

@@ -46,3 +46,9 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# Cloudflare Security Auditor Hardening
+*.pyc
+*.key
+*.token
+*.pem
