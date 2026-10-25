@@ -107,16 +107,82 @@ book-publishing-agent/
 │   ├── manuscript_compiler.py    # ReportLab print-ready PDF typesetter (6x9, gutters, headers)
 │   ├── cover_generator.py        # Front cover art & full-wrap PDF with exact spine math
 │   ├── metadata_engine.py        # Amazon KDP & Flipkart Seller Hub listing generator
-│   └── catalog_exporter.py       # Flipkart bulk Excel (.xlsx) & Amazon markdown (.md) exporter
+│   ├── catalog_exporter.py       # Flipkart bulk Excel (.xlsx) & Amazon markdown (.md) exporter
+│   ├── git_manager.py            # Automated git commit, stage, pull, and push engine
+│   └── git_watcher.py            # 24/7 filesystem watcher & debounced Antigravity auto-sync
 ├── uploader/
 │   ├── kdp_assistant.py          # Playwright KDP browser helper
-│   └── flipkart_assistant.py     # Flipkart compliance validator & browser assistant
+│   ├── flipkart_assistant.py     # Flipkart compliance validator & browser assistant
+│   ├── upload_manager.py         # Asynchronous upload worker pool and status tracker
+│   └── pending_queue.py          # Store-and-forward upload queue with platform health prober
 ├── ui/
 │   ├── app.py                    # FastAPI server
-│   └── templates/index.html      # Modern Glassmorphism Web Studio
+│   └── templates/index.html      # Modern Glassmorphism Web Studio & Mobile Gateway
 ├── main.py                       # Unified CLI and server runner
-├── launch.sh                     # One-click startup script
-├── tests/
-│   └── test_book_agent.py        # Automated test suite
+├── mobile_gateway.py             # 24/7 watchdog supervisor & Cloudflare tunnel gateway
+├── .github/workflows/
+│   ├── ci.yml                    # CI test suite runner (Python 3.11 & 3.12)
+│   └── daily_publisher.yml       # Cloud book publishing pipeline with releases
 └── output/                       # Output workspace for books, covers, and catalogs
 ```
+
+---
+
+## 🚀 Running PublisheR AI Directly From GitHub (Cloud Execution)
+
+PublisheR AI can execute completely in the cloud on GitHub Actions runners without requiring local hardware or an active computer:
+
+1. **GitHub Repository**: [**`thakoralpesh3/book-publishing-agent`**](https://github.com/thakoralpesh3/book-publishing-agent)
+2. **On-Demand Execution**:
+   - Go to the **Actions** tab $\rightarrow$ select **PublisheR AI • Cloud Book Publishing Pipeline**.
+   - Click **Run workflow**.
+   - Choose:
+     - **Custom Topic** (or leave blank to auto-pick from daily Amazon & Flipkart trends).
+     - **Trending Category**: `kids`, `wealth`, `self-help`, `tech`, `business`.
+     - **Gemini Model**: `gemini-4-argon`, `gemini-3.7-flash`, `gemini-3.8-flash`.
+     - **Trim Size**: `6x9`, `8.5x11`, `5.5x8.5`.
+     - **Chapters** & **Book Structure Type**.
+     - **Author** & **Publisher** names.
+   - Click **Run workflow**.
+3. **Automated Verification & Release**:
+   - The runner drafts the entire book, typesets the ReportLab interior PDF and full-wrap cover, generates Flipkart bulk Excel and Amazon KDP listings, and runs the 25-Point Zero-Mistake Preflight Audit.
+   - Automatically publishes a **GitHub Release** (`book-run-<RUN_NUMBER>`) attaching the downloadable PDF interior, cover PDF, cover artwork JPG, and Flipkart catalog spreadsheet.
+
+4. **Scheduled Cloud Runs**:
+   - Automatically runs every day at **02:00 UTC** (07:30 AM IST) scouting trending niches and generating fresh publication-ready books.
+
+---
+
+## ⚡ Autonomous Antigravity $\leftrightarrow$ GitHub Synchronization
+
+PublisheR AI features an autonomous, real-time filesystem watcher ([`core/git_watcher.py`](file:///home/alpesh/book-publishing-agent/core/git_watcher.py)) that seamlessly keeps GitHub up to date:
+
+- **24/7 Watchdog Integration**: Runs continuously in the background under `publisher-ai.service`.
+- **Zero-Touch Sync**: Whenever Antigravity or the user modifies, creates, or refactors any code or documentation, the watcher automatically debounces the edits (10s window), stages the files, generates a structured commit message, and pushes to `origin/main`.
+- **Safety Shielding**: Ignores temporary logs, build outputs, `.env` API keys, and cache directories.
+- **Manual CLI Commands**:
+  ```bash
+  # Check cloud sync status
+  python3 main.py git-status
+
+  # Manual sync and push
+  python3 main.py git-sync -m "Your commit message"
+
+  # Run standalone watcher
+  python3 main.py watch-git --debounce 10
+  ```
+
+---
+
+## 💾 Resilient Store-and-Forward Upload Queue
+
+If an upload to Amazon KDP or Flipkart encounters platform downtime, network dropouts, or Captcha prompts:
+- All generated files are preserved in `output/<slug>/`.
+- The upload is tracked in `data/pending_uploads.json` with exponential backoff (`[2m, 5m, 15m, 30m, 60m]`).
+- The 24/7 background watchdog checks platform reachability (`kdp.amazon.com`, `seller.flipkart.com`) and automatically retries pending uploads once the connection is healthy.
+- **CLI Commands**:
+  ```bash
+  python3 main.py pending-uploads
+  python3 main.py retry-pending [--force]
+  ```
+
