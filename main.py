@@ -292,6 +292,9 @@ def main():
 
     status_p = subparsers.add_parser("git-status", help="Show GitHub cloud synchronization status")
 
+    watch_git_p = subparsers.add_parser("watch-git", help="Run 24/7 autonomous Antigravity-to-GitHub auto-sync watcher")
+    watch_git_p.add_argument("--debounce", type=float, default=10.0, help="Debounce seconds before committing (default: 10.0)")
+
     args = parser.parse_args()
 
     if args.command == "serve" or args.command is None:
@@ -488,6 +491,24 @@ def main():
         if status.get("last_commit"):
             lc = status["last_commit"]
             print(f"📌 Last Commit: {lc.get('hash')} - {lc.get('message')} ({lc.get('date')})")
+
+    elif args.command == "watch-git":
+        import time
+        from core.git_watcher import GitAutoSyncWatcher
+        debounce = getattr(args, "debounce", 10.0)
+        print(f"\n===========================================================================")
+        print(f"👀  PUBLISHER AI — AUTONOMOUS ANTIGRAVITY GIT AUTO-SYNC WATCHER  👀")
+        print(f"===========================================================================")
+        print(f"Listening for filesystem edits across repository...")
+        print(f"Debounce Window: {debounce}s | Press Ctrl+C to stop.\n")
+        watcher = GitAutoSyncWatcher(debounce_seconds=debounce)
+        watcher.start()
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            watcher.stop()
+            print("\nGit watcher stopped cleanly.")
 
 if __name__ == "__main__":
     main()

@@ -62,6 +62,7 @@ class MobileGatewayWatchdog:
         self.server_proc: Optional[subprocess.Popen] = None
         self.tunnel_proc: Optional[subprocess.Popen] = None
         self.public_url: Optional[str] = None
+        self.git_watcher: Optional[Any] = None
         self.running = True
 
     def check_health(self) -> bool:
@@ -262,6 +263,15 @@ class MobileGatewayWatchdog:
         self.start_server()
         self.start_tunnel()
 
+        # Start Autonomous Git Auto-Sync Watcher
+        try:
+            from core.git_watcher import GitAutoSyncWatcher
+            self.git_watcher = GitAutoSyncWatcher()
+            self.git_watcher.start()
+            logger.info("⚡ Autonomous Antigravity Git Auto-Sync Watcher active in 24/7 background.")
+        except Exception as gw_e:
+            logger.warning(f"Could not initialize GitAutoSyncWatcher: {gw_e}")
+
         iteration = 0
         while self.running:
             try:
@@ -318,6 +328,11 @@ class MobileGatewayWatchdog:
     def shutdown(self):
         """Clean shutdown of child processes."""
         self.running = False
+        if self.git_watcher:
+            try:
+                self.git_watcher.stop()
+            except Exception:
+                pass
         if self.tunnel_proc and self.tunnel_proc.poll() is None:
             self.tunnel_proc.terminate()
         if self.server_proc and self.server_proc.poll() is None:
