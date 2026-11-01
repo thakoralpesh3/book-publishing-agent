@@ -1,0 +1,13 @@
+[Unit]
+Description=PublisheR AI • Autonomous 11:30 PM Daily Book Generation & Posting Timer
+RefuseManualStart=no
+RefuseManualStop=no
+
+[Timer]
+# Fire daily at 11:30 PM IST (23:30:00 local time)
+OnCalendar=*-*-* 23:30:00
+Persistent=true
+Unit=publisher-daily.service
+
+[Install]
+WantedBy=timers.target
