@@ -1,10 +1,14 @@
 [Unit]
-Description=PublisheR AI • Autonomous 11:30 PM Daily Book Generation & Posting Timer
+Description=PublisheR AI • Autonomous Startup & 8-Hour Auto-Publishing Timer
 RefuseManualStart=no
 RefuseManualStop=no
 
 [Timer]
-# Fire daily at 11:30 PM IST (23:30:00 local time)
+# Run 10 minutes after boot (allowing YouTube and Social agents to initialize)
+OnBootSec=10min
+# Run again every 8 hours after last activation
+OnUnitActiveSec=8h
+# Anchor run at 11:30 PM IST (23:30:00)
 OnCalendar=*-*-* 23:30:00
 Persistent=true
 Unit=publisher-daily.service
