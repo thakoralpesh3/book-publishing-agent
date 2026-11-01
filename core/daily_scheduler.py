@@ -257,6 +257,16 @@ class DailyPublishScheduler:
         """
         logger.info("🛡️ [Startup Sentry] Monitoring YouTube & Social Media agents on startup before running PublisheR AI...")
         try:
+            # Check and auto-upload any stored contents from prior sessions
+            try:
+                from uploader.pending_queue import pending_queue
+                logger.info("🔄 [Startup Sentry] Checking for stored book contents from prior sessions...")
+                startup_pq = pending_queue.process_startup_stored_contents(force=True)
+                if startup_pq.get("dispatched_count", 0) > 0:
+                    logger.info(f"🚀 [Startup Sentry] Dispatched {startup_pq['dispatched_count']} stored book upload(s) on startup!")
+            except Exception as startup_err:
+                logger.debug(f"Startup sentry pending upload check: {startup_err}")
+
             from core.background_orchestrator import BackgroundPublishingOrchestrator
             orch = BackgroundPublishingOrchestrator()
             cfg = self.get_config()
