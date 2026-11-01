@@ -39,6 +39,22 @@ STATIC_DIR = BASE_DIR / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+@app.on_event("startup")
+async def on_app_startup():
+    """On FastAPI server startup, check and upload any stored pending contents."""
+    import threading
+    def _flush_on_startup():
+        try:
+            from uploader.pending_queue import pending_queue
+            logger.info("🔄 [FastAPI Startup] Checking for stored pending book uploads...")
+            res = pending_queue.process_startup_stored_contents(force=True)
+            if res.get("dispatched_count", 0) > 0:
+                logger.info(f"🚀 [FastAPI Startup] Dispatched {res['dispatched_count']} stored book upload(s)!")
+        except Exception as e:
+            logger.debug(f"FastAPI startup pending queue flush notice: {e}")
+
+    threading.Thread(target=_flush_on_startup, daemon=True, name="StartupPendingUploadFlushThread").start()
+
 @app.get("/api/health")
 async def health_check():
     """Health check endpoint for Chhaya watchdog supervision."""
