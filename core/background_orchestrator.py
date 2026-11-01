@@ -52,7 +52,7 @@ class BackgroundPublishingOrchestrator:
                 "current_date": today_str,
                 "last_run_date": "",
                 "runs_today_count": 0,
-                "daily_limit": 1,
+                "daily_limit": 3,
                 "last_run_timestamp": "",
                 "last_book_slug": "",
                 "last_book_title": "",
@@ -69,13 +69,30 @@ class BackgroundPublishingOrchestrator:
             logger.warning(f"Error reading tracker file: {e}")
             return {"runs_today_count": 0, "last_run_date": ""}
 
-    def is_daily_run_due(self) -> bool:
-        """Checks if today's book has already been generated."""
+    def is_run_due(self, min_interval_hours: float = 8.0) -> bool:
+        """
+        Checks if publication pipeline is due based on the 8-hour interval rule.
+        Returns True if:
+        1. No previous run has ever occurred, OR
+        2. Elapsed time since last run timestamp >= min_interval_hours (8 hours).
+        """
         data = self.get_tracker_data()
-        today_str = datetime.date.today().strftime("%Y-%m-%d")
-        if data.get("last_run_date") == today_str and data.get("runs_today_count", 0) >= data.get("daily_limit", 1):
-            return False
-        return True
+        last_ts_str = data.get("last_run_timestamp", "")
+        if not last_ts_str:
+            return True
+
+        try:
+            last_dt = datetime.datetime.strptime(last_ts_str, "%Y-%m-%d %H:%M:%S")
+            now = datetime.datetime.now()
+            diff_hours = (now - last_dt).total_seconds() / 3600.0
+            return diff_hours >= min_interval_hours
+        except Exception:
+            today_str = datetime.date.today().strftime("%Y-%m-%d")
+            return data.get("last_run_date") != today_str
+
+    def is_daily_run_due(self) -> bool:
+        """Checks if book generation is due (checks 8-hour interval)."""
+        return self.is_run_due(min_interval_hours=8.0)
 
     def check_prerequisite_agents_status(self) -> Dict[str, Any]:
         """
