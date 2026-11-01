@@ -1,3 +1,260 @@
 {
-  "queue": []
+  "queue": [
+    {
+      "id": "pending_kdp_test_book_run_1793553582",
+      "queue_id": "pending_kdp_test_book_run_1793553582",
+      "slug": "test_book_run",
+      "platform": "kdp",
+      "title": "The Focused Mind",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-01 22:49:42",
+      "last_attempt": "2026-11-01 22:49:42",
+      "last_attempt_at": "2026-11-01 22:49:42",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793553642.1763377,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    },
+    {
+      "id": "pending_flipkart_test_book_run_1793553582",
+      "queue_id": "pending_flipkart_test_book_run_1793553582",
+      "slug": "test_book_run",
+      "platform": "flipkart",
+      "title": "The Focused Mind",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-01 22:49:42",
+      "last_attempt": "2026-11-01 22:49:42",
+      "last_attempt_at": "2026-11-01 22:49:42",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793553642.230187,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    },
+    {
+      "id": "pending_kdp_the_7-day_mindset_reset_1793553582",
+      "queue_id": "pending_kdp_the_7-day_mindset_reset_1793553582",
+      "slug": "the_7-day_mindset_reset",
+      "platform": "kdp",
+      "title": "The 7-Day Mindset Reset",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-01 22:49:42",
+      "last_attempt": "2026-11-01 22:49:42",
+      "last_attempt_at": "2026-11-01 22:49:42",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793553642.2580945,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    },
+    {
+      "id": "pending_flipkart_the_7-day_mindset_reset_1793553582",
+      "queue_id": "pending_flipkart_the_7-day_mindset_reset_1793553582",
+      "slug": "the_7-day_mindset_reset",
+      "platform": "flipkart",
+      "title": "The 7-Day Mindset Reset",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-01 22:49:42",
+      "last_attempt": "2026-11-01 22:49:42",
+      "last_attempt_at": "2026-11-01 22:49:42",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793553642.2621706,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    },
+    {
+      "id": "pending_kdp_how_to_draw_cute_animals_and_easy_doodles_1793553582",
+      "queue_id": "pending_kdp_how_to_draw_cute_animals_and_easy_doodles_1793553582",
+      "slug": "how_to_draw_cute_animals_and_easy_doodles",
+      "platform": "kdp",
+      "title": "How to Draw Cute Animals and Easy Doodles",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-01 22:49:42",
+      "last_attempt": "2026-11-01 22:49:42",
+      "last_attempt_at": "2026-11-01 22:49:42",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793553642.3616617,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    },
+    {
+      "id": "pending_flipkart_how_to_draw_cute_animals_and_easy_doodles_1793553582",
+      "queue_id": "pending_flipkart_how_to_draw_cute_animals_and_easy_doodles_1793553582",
+      "slug": "how_to_draw_cute_animals_and_easy_doodles",
+      "platform": "flipkart",
+      "title": "How to Draw Cute Animals and Easy Doodles",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-01 22:49:42",
+      "last_attempt": "2026-11-01 22:49:42",
+      "last_attempt_at": "2026-11-01 22:49:42",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793553642.3666167,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    },
+    {
+      "id": "pending_kdp_the_2026_micro-saas_playbook__building_automated_d_1793553582",
+      "queue_id": "pending_kdp_the_2026_micro-saas_playbook__building_automated_d_1793553582",
+      "slug": "the_2026_micro-saas_playbook__building_automated_d",
+      "platform": "kdp",
+      "title": "The 2026 Micro-SaaS Playbook: Building Automated Digital Assets",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-01 22:49:42",
+      "last_attempt": "2026-11-01 22:49:42",
+      "last_attempt_at": "2026-11-01 22:49:42",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793553642.413832,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    },
+    {
+      "id": "pending_flipkart_the_2026_micro-saas_playbook__building_automated_d_1793553582",
+      "queue_id": "pending_flipkart_the_2026_micro-saas_playbook__building_automated_d_1793553582",
+      "slug": "the_2026_micro-saas_playbook__building_automated_d",
+      "platform": "flipkart",
+      "title": "The 2026 Micro-SaaS Playbook: Building Automated Digital Assets",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-01 22:49:42",
+      "last_attempt": "2026-11-01 22:49:42",
+      "last_attempt_at": "2026-11-01 22:49:42",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793553642.4162421,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    }
+  ]
 }

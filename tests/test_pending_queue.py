@@ -234,6 +234,60 @@ class TestPendingUploadQueue(unittest.TestCase):
             # Verify deleted
             self.assertEqual(len(self.queue.list_items()), 0)
 
+    def test_08_sync_unregistered_books_from_disk(self):
+        """Verify automatic discovery of unrecorded stored books on disk."""
+        unrecorded_slug = "test-unrecorded-stored-book"
+        unrec_dir = self.output_dir / unrecorded_slug
+        unrec_dir.mkdir(parents=True, exist_ok=True)
+        (unrec_dir / "manuscript_interior.pdf").write_bytes(b"%PDF interior")
+        (unrec_dir / "listing_metadata.json").write_text(json.dumps({
+            "amazon_kdp": {"title": "Unrecorded Stored Book"}
+        }))
+
+        discovered = self.queue.sync_unregistered_books_from_disk()
+        self.assertEqual(discovered, 1)
+
+        items = self.queue.list_items(status="pending")
+        slug_platforms = [(it["slug"], it["platform"]) for it in items]
+        self.assertIn((unrecorded_slug, "kdp"), slug_platforms)
+        self.assertIn((unrecorded_slug, "flipkart"), slug_platforms)
+
+    def test_09_process_startup_stored_contents(self):
+        """Verify startup auto-upload of stored contents when platforms are online."""
+        # 1. Add failed item to queue
+        self.queue.add_or_update(
+            slug=self.slug,
+            platform="kdp",
+            failure_reason="Server 503 error during previous session",
+            failure_stage="upload"
+        )
+
+        # 2. Test startup execution with online platforms
+        with patch.object(self.queue, "check_platform_health", return_value={"kdp": True, "flipkart": True, "internet": True}):
+            with patch.object(self.queue, "is_platform_healthy", return_value=True):
+                with patch("uploader.upload_manager.start_upload_job", return_value="job-startup-123"):
+                    res = self.queue.process_startup_stored_contents(force=True)
+                    self.assertTrue(res.get("startup"))
+                    self.assertEqual(res.get("dispatched_count"), 1)
+                    self.assertEqual(len(res.get("started_jobs", [])), 1)
+
+        # 3. Test startup execution with offline platforms (safely preserved in queue)
+        offline_slug = "test-offline-startup-book"
+        self.queue.add_or_update(
+            slug=offline_slug,
+            platform="flipkart",
+            failure_reason="No internet connection",
+            failure_stage="init"
+        )
+        with patch.object(self.queue, "check_platform_health", return_value={"kdp": False, "flipkart": False, "internet": False}):
+            with patch.object(self.queue, "is_platform_healthy", return_value=False):
+                res_off = self.queue.process_startup_stored_contents(force=True)
+                self.assertEqual(res_off.get("dispatched_count"), 0)
+                # Content must still be safely preserved in pending queue
+                pending_items = self.queue.list_items(status="pending")
+                self.assertTrue(any(it["slug"] == offline_slug for it in pending_items))
+
 
 if __name__ == "__main__":
     unittest.main()
+
