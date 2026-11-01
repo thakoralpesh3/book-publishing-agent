@@ -63,6 +63,7 @@ class MobileGatewayWatchdog:
         self.tunnel_proc: Optional[subprocess.Popen] = None
         self.public_url: Optional[str] = None
         self.git_watcher: Optional[Any] = None
+        self.daily_scheduler: Optional[Any] = None
         self.running = True
 
     def check_health(self) -> bool:
