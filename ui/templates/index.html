@@ -1205,6 +1205,22 @@
                         bookEl.innerText = tracker.last_book_title || "None";
                         bookEl.title = tracker.last_book_title || "None";
                     }
+
+                    // Fetch live schedule info
+                    try {
+                        const sRes = await fetch("/api/schedule");
+                        const sData = await sRes.json();
+                        if (sData.status === "success" && sData.schedule) {
+                            const sc = sData.schedule;
+                            const nextEl = document.getElementById("bgStatusNextRun");
+                            if (nextEl && sc.next_run) {
+                                nextEl.innerText = `${sc.next_run.countdown_human} (${sc.next_run.target_time_display})`;
+                            }
+                            if (runsEl) {
+                                runsEl.innerText = `${tracker.runs_today_count || 0} / ${sc.mode ? '3 (8h cycle)' : '1'}`;
+                            }
+                        }
+                    } catch (e) {}
                 }
             } catch (err) {
                 console.debug("Background status fetch error:", err);
