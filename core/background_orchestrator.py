@@ -240,6 +240,15 @@ class BackgroundPublishingOrchestrator:
         logger.info(f"📚 [PublisheR AI Background] Starting Autonomous Book Publishing Pipeline ({today_str})")
         logger.info("=" * 70)
 
+        # Check and process any stored/pending uploads from prior sessions
+        try:
+            from uploader.pending_queue import pending_queue
+            startup_pq = pending_queue.process_startup_stored_contents(force=True)
+            if startup_pq.get("dispatched_count", 0) > 0:
+                logger.info(f"🔄 Auto-dispatched {startup_pq['dispatched_count']} stored pending upload(s) on pipeline start.")
+        except Exception as pq_start_err:
+            logger.debug(f"Pending queue startup check notice: {pq_start_err}")
+
         # 1. Select trend topic
         if custom_topic:
             trend_obj = {
@@ -338,17 +347,17 @@ class BackgroundPublishingOrchestrator:
             # Trigger auto-upload assistant if requested
             upload_job_ids = []
             if auto_upload and auto_upload.lower() != "none":
-                try:
-                    from uploader.upload_manager import start_upload_job
-                    platforms_to_upload = []
-                    if auto_upload.lower() in ["kdp", "amazon"]:
-                        platforms_to_upload = ["kdp"]
-                    elif auto_upload.lower() == "flipkart":
-                        platforms_to_upload = ["flipkart"]
-                    elif auto_upload.lower() in ["both", "all"]:
-                        platforms_to_upload = ["kdp", "flipkart"]
+                platforms_to_upload = []
+                if auto_upload.lower() in ["kdp", "amazon"]:
+                    platforms_to_upload = ["kdp"]
+                elif auto_upload.lower() == "flipkart":
+                    platforms_to_upload = ["flipkart"]
+                elif auto_upload.lower() in ["both", "all"]:
+                    platforms_to_upload = ["kdp", "flipkart"]
 
-                    for plat in platforms_to_upload:
+                for plat in platforms_to_upload:
+                    try:
+                        from uploader.upload_manager import start_upload_job
                         jid = start_upload_job(
                             slug=book_data["slug"],
                             platform=plat,
@@ -357,8 +366,21 @@ class BackgroundPublishingOrchestrator:
                         )
                         upload_job_ids.append(jid)
                         logger.info(f"Background pipeline initiated auto-upload for {plat.upper()} (Job ID: {jid})")
-                except Exception as e:
-                    logger.warning(f"Could not initiate auto-upload in background pipeline: {e}")
+                    except Exception as e:
+                        logger.warning(f"Could not initiate auto-upload in background pipeline for {plat.upper()}: {e}")
+                        try:
+                            from uploader.pending_queue import pending_queue
+                            pending_queue.add_or_update(
+                                slug=book_data["slug"],
+                                platform=plat,
+                                error_reason=f"Failed to initiate auto-upload: {e}",
+                                failure_reason=f"Failed to initiate auto-upload: {e}",
+                                failure_stage="init_upload",
+                                title=book_data.get("title")
+                            )
+                            logger.info(f"💾 Content saved: {book_data['slug']} ({plat.upper()}) enqueued for auto-upload upon agent restart.")
+                        except Exception as q_err:
+                            logger.error(f"Failed to record pending upload: {q_err}")
 
             # Send completion notification
             notif_msg = f"Completed: \"{book_data['title']}\" ({final_pages} pages). Zero-Mistake Audit: {audit_report.get('compliance_score')}."
