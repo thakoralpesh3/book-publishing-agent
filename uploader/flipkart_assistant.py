@@ -216,13 +216,26 @@ class FlipkartAssistant:
                         break
                     time.sleep(2)
 
+            session_error = None
             except Exception as e:
+                session_error = str(e)
                 log(f"Flipkart Assistant session notice: {e}")
             finally:
                 try:
                     context.close()
                 except Exception:
                     pass
+
+        if session_error:
+            return {
+                "status": "failed",
+                "platform": "flipkart",
+                "message": f"Flipkart upload interrupted: {session_error}",
+                "error": session_error,
+                "validation": validation,
+                "excel_path": str(excel_path.resolve()) if excel_path.exists() else None,
+                "log": status_log
+            }
 
         return {
             "status": "completed",

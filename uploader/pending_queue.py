@@ -346,6 +346,92 @@ class PendingUploadQueue:
             "skipped": skipped
         }
 
+    def sync_unregistered_books_from_disk(self) -> int:
+        """
+        Scans output directory for any generated books that were not registered
+        in the pending queue (e.g. following sudden process termination) and
+        registers them to guarantee zero content loss.
+        """
+        if not self.output_dir.exists():
+            return 0
+
+        data = self._load_data()
+        existing_slugs = {it["slug"] for it in data.get("queue", [])}
+        discovered_count = 0
+
+        try:
+            for item in self.output_dir.iterdir():
+                if item.is_dir() and item.name not in existing_slugs and not item.name.startswith("."):
+                    meta_file = item / "listing_metadata.json"
+                    interior_pdf = item / "manuscript_interior.pdf"
+                    if meta_file.exists() and interior_pdf.exists():
+                        try:
+                            meta = json.loads(meta_file.read_text(encoding="utf-8"))
+                            title = meta.get("amazon_kdp", {}).get("title") or meta.get("title") or item.name
+                        except Exception:
+                            title = item.name
+
+                        logger.info(f"💾 Discovered stored un-uploaded book on disk: '{title}' ({item.name}). Registering into pending queue...")
+                        self.add_or_update(
+                            slug=item.name,
+                            platform="kdp",
+                            error_reason="Restored from disk storage on agent startup",
+                            failure_reason="Restored from disk storage on agent startup",
+                            title=title
+                        )
+                        self.add_or_update(
+                            slug=item.name,
+                            platform="flipkart",
+                            error_reason="Restored from disk storage on agent startup",
+                            failure_reason="Restored from disk storage on agent startup",
+                            title=title
+                        )
+                        discovered_count += 1
+        except Exception as e:
+            logger.warning(f"Error scanning disk for unrecorded stored books: {e}")
+
+        return discovered_count
+
+    def process_startup_stored_contents(self, force: bool = True) -> Dict[str, Any]:
+        """
+        Invoked whenever this agent starts again:
+        1. Discovers any stored books on disk not yet tracked.
+        2. Inspects all pending upload items.
+        3. Probes platform connectivity and immediately uploads stored contents
+           if platforms are reachable (bypassing retry cooldown delays with force=True).
+        """
+        logger.info("🔄 [Agent Startup] Checking for stored book contents from previous sessions...")
+        self.sync_unregistered_books_from_disk()
+
+        pending_items = self.list_items(status="pending")
+        if not pending_items:
+            logger.info("✅ [Agent Startup] No stored pending book uploads found. Queue is clean.")
+            return {"status": "empty", "stored_count": 0, "message": "No stored pending uploads on startup."}
+
+        logger.info(f"📦 [Agent Startup] Found {len(pending_items)} stored pending upload item(s) awaiting publication.")
+
+        # Probe platforms
+        health = self.check_platform_health(platform="all")
+        kdp_online = health.get("kdp", False) or health.get("internet", False)
+        fk_online = health.get("flipkart", False) or health.get("internet", False)
+
+        logger.info(f"🌐 Platform Reachability on Startup: Amazon KDP={'ONLINE' if kdp_online else 'OFFLINE'} | Flipkart={'ONLINE' if fk_online else 'OFFLINE'}")
+
+        # Trigger auto-recovery
+        res = self.process_pending_queue(force=force)
+        dispatched_count = res.get("dispatched_count", 0)
+
+        if dispatched_count > 0:
+            logger.info(f"🚀 [Agent Startup] Successfully auto-dispatched {dispatched_count} stored book upload job(s)!")
+        else:
+            logger.info(f"💾 [Agent Startup] Stored content preserved in queue ({len(pending_items)} items). Waiting for platforms to become reachable.")
+
+        res["startup"] = True
+        res["stored_count"] = len(pending_items)
+        res["platform_health"] = health
+        return res
+
 
 # Singleton instance
 pending_queue = PendingUploadQueue()
+

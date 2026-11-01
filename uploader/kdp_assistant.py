@@ -132,13 +132,27 @@ class KDPAssistant:
                         break
                     time.sleep(2)
 
+            session_error = None
             except Exception as e:
+                session_error = str(e)
                 log(f"KDP Assistant session exception: {e}")
             finally:
                 try:
                     context.close()
                 except Exception:
                     pass
+
+        if session_error:
+            return {
+                "status": "failed",
+                "platform": "amazon_kdp",
+                "message": f"Amazon KDP upload interrupted: {session_error}",
+                "error": session_error,
+                "book_title": amz.get("title"),
+                "interior_pdf": str(interior_pdf.resolve()) if interior_pdf.exists() else None,
+                "cover_pdf": str(cover_pdf.resolve()) if cover_pdf.exists() else None,
+                "log": status_log
+            }
 
         return {
             "status": "completed",
