@@ -108,6 +108,15 @@ class BackgroundRunRequest(BaseModel):
     force: bool = False
     category: Optional[str] = None
     topic: Optional[str] = None
+    auto_upload: Optional[str] = "both"
+
+class ScheduleUpdateRequest(BaseModel):
+    enabled: Optional[bool] = None
+    interval_hours: Optional[float] = None
+    scheduled_time: Optional[str] = None
+    auto_upload: Optional[str] = None
+    category: Optional[str] = None
+    startup_prereq_wait: Optional[bool] = None
 
 @app.get("/api/background/status")
 async def get_background_status():
@@ -121,7 +130,7 @@ async def get_background_status():
             "status": "success",
             "tracker": tracker,
             "prerequisites": prereqs,
-            "is_due": orchestrator.is_daily_run_due()
+            "is_due": orchestrator.is_run_due(min_interval_hours=8.0)
         }
     except Exception as e:
         logger.exception("Error checking background status")
@@ -138,7 +147,8 @@ async def trigger_background_run(req: BackgroundRunRequest, background_tasks: Ba
             orchestrator.run_daily_publishing_pipeline,
             force=req.force,
             category=req.category,
-            custom_topic=req.topic
+            custom_topic=req.topic,
+            auto_upload=req.auto_upload or "both"
         )
         return {
             "status": "queued",
@@ -147,6 +157,45 @@ async def trigger_background_run(req: BackgroundRunRequest, background_tasks: Ba
         }
     except Exception as e:
         logger.exception("Error triggering background run")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/schedule")
+async def get_schedule_status():
+    """Returns the 8-hour recurring and startup publishing schedule status."""
+    try:
+        from core.daily_scheduler import daily_scheduler
+        return {"status": "success", "schedule": daily_scheduler.get_status()}
+    except Exception as e:
+        logger.exception("Error getting schedule status")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/schedule")
+async def update_schedule(req: ScheduleUpdateRequest):
+    """Updates the schedule configuration (interval, time, auto-upload platform)."""
+    try:
+        from core.daily_scheduler import daily_scheduler
+        st = daily_scheduler.update_config(
+            enabled=req.enabled,
+            interval_hours=req.interval_hours,
+            scheduled_time=req.scheduled_time,
+            auto_upload=req.auto_upload,
+            category=req.category,
+            startup_prereq_wait=req.startup_prereq_wait
+        )
+        return {"status": "success", "schedule": st}
+    except Exception as e:
+        logger.exception("Error updating schedule")
+        return {"status": "error", "message": str(e)}
+
+@app.post("/api/schedule/run_now")
+async def trigger_schedule_now(background_tasks: BackgroundTasks):
+    """Triggers the scheduled book generation and auto-upload pipeline immediately."""
+    try:
+        from core.daily_scheduler import daily_scheduler
+        background_tasks.add_task(daily_scheduler.execute_daily_pipeline, force=True)
+        return {"status": "queued", "message": "Scheduled publishing pipeline triggered successfully"}
+    except Exception as e:
+        logger.exception("Error triggering schedule run")
         return {"status": "error", "message": str(e)}
 
 
