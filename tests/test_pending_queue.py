@@ -236,6 +236,10 @@ class TestPendingUploadQueue(unittest.TestCase):
 
     def test_08_sync_unregistered_books_from_disk(self):
         """Verify automatic discovery of unrecorded stored books on disk."""
+        # Pre-register the existing self.slug so only the new book is unregistered
+        self.queue.add_or_update(slug=self.slug, platform="kdp")
+        self.queue.add_or_update(slug=self.slug, platform="flipkart")
+
         unrecorded_slug = "test-unrecorded-stored-book"
         unrec_dir = self.output_dir / unrecorded_slug
         unrec_dir.mkdir(parents=True, exist_ok=True)
