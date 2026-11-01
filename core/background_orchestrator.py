@@ -201,7 +201,8 @@ class BackgroundPublishingOrchestrator:
         force: bool = False,
         category: Optional[str] = None,
         custom_topic: Optional[str] = None,
-        auto_upload: str = "none"
+        auto_upload: str = "none",
+        min_interval_hours: float = 8.0
     ) -> Dict[str, Any]:
         """
         Executes complete headless book generation in the background.
@@ -210,16 +211,27 @@ class BackgroundPublishingOrchestrator:
         """
         today_str = datetime.date.today().strftime("%Y-%m-%d")
 
-        if not force and not self.is_daily_run_due():
-            logger.info(f"✨ [PublisheR AI Background] Daily book already generated for {today_str}. Skipping (use force=True to override).")
+        if not force and not self.is_run_due(min_interval_hours=min_interval_hours):
+            data = self.get_tracker_data()
+            last_ts_str = data.get("last_run_timestamp", "")
+            remaining_mins = 0
+            if last_ts_str:
+                try:
+                    last_dt = datetime.datetime.strptime(last_ts_str, "%Y-%m-%d %H:%M:%S")
+                    diff_secs = (datetime.datetime.now() - last_dt).total_seconds()
+                    remaining_secs = max(0, int((min_interval_hours * 3600) - diff_secs))
+                    remaining_mins = int(remaining_secs // 60)
+                except Exception:
+                    pass
+            logger.info(f"✨ [PublisheR AI Background] 8-Hour interval cooldown active ({remaining_mins} mins remaining). Skipping (use force=True to override).")
             return {
                 "status": "skipped",
-                "message": f"Daily book limit reached for {today_str}",
+                "message": f"8-hour interval cooldown active ({remaining_mins} mins remaining)",
                 "date": today_str
             }
 
         logger.info("=" * 70)
-        logger.info(f"📚 [PublisheR AI Background] Starting Autonomous Daily Book Pipeline for {today_str}")
+        logger.info(f"📚 [PublisheR AI Background] Starting Autonomous Book Publishing Pipeline ({today_str})")
         logger.info("=" * 70)
 
         # 1. Select trend topic
