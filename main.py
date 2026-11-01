@@ -296,6 +296,28 @@ def main():
     watch_git_p = subparsers.add_parser("watch-git", help="Run 24/7 autonomous Antigravity-to-GitHub auto-sync watcher")
     watch_git_p.add_argument("--debounce", type=float, default=10.0, help="Debounce seconds before committing (default: 10.0)")
 
+    # Schedule commands (8-hour interval & daily anchor)
+    sched_p = subparsers.add_parser("schedule", help="Manage 8-hour recurring and startup auto-publishing schedule")
+    sched_sub = sched_p.add_subparsers(dest="schedule_action")
+    sched_sub.add_parser("status", help="Show current schedule status, countdown, and prerequisite state")
+    sched_sub.add_parser("run-now", help="Trigger scheduled publishing pipeline immediately")
+    sched_sub.add_parser("enable", help="Enable scheduled auto-publishing")
+    sched_sub.add_parser("disable", help="Disable scheduled auto-publishing")
+
+    set_p = sched_sub.add_parser("set", help="Update schedule settings")
+    set_p.add_argument("--interval", type=float, default=None, help="Recurring interval in hours (default: 8.0)")
+    set_p.add_argument("--time", type=str, default=None, help="Daily target anchor time (e.g. 23:30)")
+    set_p.add_argument("--upload", type=str, choices=["none", "kdp", "flipkart", "both"], default=None, help="Target upload platform")
+    set_p.add_argument("--category", type=str, default=None, help="Trend category override")
+    set_p.add_argument("--startup-wait", type=str, choices=["true", "false"], default=None, help="Wait for YouTube & Social agents on startup")
+
+    # Startup sentry command
+    sentry_p = subparsers.add_parser("startup-sentry", help="Run background sentry waiting for YouTube & Social agents, then generate & post")
+    sentry_p.add_argument("--poll-interval", type=int, default=15, help="Poll interval in seconds (default: 15)")
+    sentry_p.add_argument("--timeout", type=int, default=3600, help="Max wait timeout in seconds (default: 3600)")
+    sentry_p.add_argument("--auto-upload", type=str, choices=["none", "kdp", "flipkart", "both"], default="both", help="Auto upload platform")
+    sentry_p.add_argument("--force", action="store_true", help="Force run bypassing 8-hour cooldown")
+
     args = parser.parse_args()
 
     if args.command == "serve" or args.command is None:
