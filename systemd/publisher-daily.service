@@ -1,0 +1,12 @@
+[Unit]
+Description=PublisheR AI • Autonomous 11:30 PM Daily Book Generation & Posting Service
+After=network.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/alpesh/book-publishing-agent
+ExecStart=/usr/bin/bash /home/alpesh/book-publishing-agent/run_background_publisher.sh --scheduled
+Environment=PYTHONUNBUFFERED=1
+Environment="PATH=/home/alpesh/.local/bin:/home/alpesh/bin:/usr/local/bin:/usr/bin:/bin"
+StandardOutput=append:/home/alpesh/book-publishing-agent/data/publisher_daily_scheduled.log
+StandardError=append:/home/alpesh/book-publishing-agent/data/publisher_daily_scheduled.log
