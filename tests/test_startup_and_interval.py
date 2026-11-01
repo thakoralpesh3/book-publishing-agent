@@ -121,8 +121,11 @@ class TestStartupAndInterval(unittest.TestCase):
             self.assertEqual(res.get("title"), "Startup Book")
             mock_pipeline.assert_called_once()
 
-    def test_06_fastapi_schedule_endpoints(self):
+    @patch("core.daily_scheduler.DailyPublishScheduler.execute_daily_pipeline")
+    def test_06_fastapi_schedule_endpoints(self, mock_exec):
         """Tests /api/schedule GET, POST, and run_now endpoints."""
+        mock_exec.return_value = {"status": "completed"}
+
         # 1. GET /api/schedule
         res = self.client.get("/api/schedule")
         self.assertEqual(res.status_code, 200)
