@@ -450,29 +450,44 @@ class BackgroundPublishingOrchestrator:
         except Exception:
             pass
 
-    def watch_and_run(self, poll_interval_seconds: int = 20, max_wait_seconds: int = 1800) -> Dict[str, Any]:
+    def watch_and_run(
+        self,
+        poll_interval_seconds: int = 15,
+        max_wait_seconds: int = 3600,
+        auto_upload: str = "both",
+        min_interval_hours: float = 8.0,
+        force: bool = False
+    ) -> Dict[str, Any]:
         """
         Background Sentry:
-        Polls prerequisite agent status until Aradhya, YouTube, and Social agent are done,
-        then automatically executes PublisheR AI's daily publishing pipeline.
+        Polls prerequisite agent status until YouTube and Social agents are done,
+        then automatically executes PublisheR AI's book publishing & posting pipeline.
         """
-        logger.info(f"👀 [PublisheR AI Sentry] Watching for Aradhya, YouTube & Social agents completion (polling every {poll_interval_seconds}s)...")
+        logger.info(f"👀 [PublisheR AI Sentry] Watching for YouTube & Social agents completion (polling every {poll_interval_seconds}s, max wait {max_wait_seconds}s)...")
         start_time = time.time()
 
         while (time.time() - start_time) < max_wait_seconds:
             status = self.check_prerequisite_agents_status()
             logger.debug(f"Sentry poll: YT running={status['youtube']['running']}, Social running={status['social']['running']}, Done={status['prerequisites_finished']}")
 
-            # If prerequisites have finished and our daily run is due:
+            # If prerequisites have finished and run is due:
             if status["prerequisites_finished"]:
-                if status["publisher_daily_due"]:
-                    logger.info("🎯 All prerequisite agents have finished! Commencing PublisheR AI background pipeline...")
-                    return self.run_daily_publishing_pipeline(force=False)
+                if force or self.is_run_due(min_interval_hours=min_interval_hours):
+                    logger.info("🎯 Prerequisite agents have finished! Commencing PublisheR AI background pipeline...")
+                    return self.run_daily_publishing_pipeline(
+                        force=force,
+                        auto_upload=auto_upload,
+                        min_interval_hours=min_interval_hours
+                    )
                 else:
-                    logger.info("✨ Prerequisite agents finished, and PublisheR AI has already completed today's book.")
-                    return {"status": "already_completed", "date": status["today"]}
+                    logger.info("✨ Prerequisite agents finished, but 8-hour cooldown is active.")
+                    return {"status": "cooldown_active", "date": status["today"]}
 
             time.sleep(poll_interval_seconds)
 
-        logger.info(f"⏳ Sentry reached timeout ({max_wait_seconds}s). Executing pipeline if due...")
-        return self.run_daily_publishing_pipeline(force=False)
+        logger.info(f"⏳ Sentry reached timeout ({max_wait_seconds}s). Checking if pipeline execution is due...")
+        return self.run_daily_publishing_pipeline(
+            force=force,
+            auto_upload=auto_upload,
+            min_interval_hours=min_interval_hours
+        )
