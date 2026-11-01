@@ -21,6 +21,14 @@ export XAUTHORITY="${XAUTHORITY:-$HOME/.Xauthority}"
 if [ "$1" == "--watch" ]; then
     shift
     exec python3 "$SCRIPT_DIR/main.py" watch-and-run "$@"
+elif [ "$1" == "--scheduled" ]; then
+    shift
+    exec python3 "$SCRIPT_DIR/main.py" schedule run-now "$@"
 else
-    exec python3 "$SCRIPT_DIR/main.py" run-background "$@"
+    # Default auto-upload to 'both' if not explicitly passed
+    if [[ "$*" != *"--auto-upload"* ]]; then
+        exec python3 "$SCRIPT_DIR/main.py" run-background --auto-upload both "$@"
+    else
+        exec python3 "$SCRIPT_DIR/main.py" run-background "$@"
+    fi
 fi
