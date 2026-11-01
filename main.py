@@ -533,6 +533,89 @@ def main():
             watcher.stop()
             print("\nGit watcher stopped cleanly.")
 
+    elif args.command == "schedule":
+        from core.daily_scheduler import daily_scheduler
+        action = getattr(args, "schedule_action", "status") or "status"
+
+        if action == "status":
+            st = daily_scheduler.get_status()
+            nr = st.get("next_run", {})
+            pr = st.get("prerequisites", {})
+            print("\n" + "=" * 75)
+            print("⏰  PUBLISHER AI — AUTONOMOUS 8-HOUR & STARTUP PUBLISHING SCHEDULE  ⏰")
+            print("=" * 75)
+            print(f"Status:             {'🟢 ENABLED' if st.get('enabled') else '🔴 DISABLED'}")
+            print(f"Interval Cycle:     Every {st.get('interval_hours')} Hours")
+            print(f"Daily Anchor Time:  {st.get('scheduled_time')} IST")
+            print(f"Auto-Upload Target: {st.get('auto_upload', 'both').upper()} (Amazon KDP + Flipkart)")
+            print(f"Startup Sync:       {'YES (Waits for YouTube & Social agents)' if st.get('startup_prereq_wait') else 'NO'}")
+            print("-" * 75)
+            print(f"Next Run:           {nr.get('target_run_iso')} ({nr.get('countdown_human')})")
+            print(f"Last Run:           {st.get('last_run_timestamp') or 'None'} [Status: {st.get('last_run_status') or 'None'}]")
+            if st.get("last_book_title"):
+                print(f"Last Book:          {st.get('last_book_title')} ({st.get('last_book_slug')})")
+            print("-" * 75)
+            print("Prerequisite Agent Readiness:")
+            yt = pr.get("youtube", {})
+            sc = pr.get("social", {})
+            print(f"  • YouTube Shorts: Running={'YES' if yt.get('running') else 'NO'} | Completed Today={'YES [✓]' if yt.get('completed_today') else 'NO'}")
+            print(f"  • Social Stories: Running={'YES' if sc.get('running') else 'NO'} | Completed Today={'YES [✓]' if sc.get('completed_today') else 'NO'}")
+            print(f"  • Prerequisites Finished: {'YES [✓]' if pr.get('prerequisites_finished') else 'PENDING / RUNNING'}")
+            print("=" * 75 + "\n")
+
+        elif action == "run-now":
+            print("\n🚀 Triggering scheduled publishing & posting pipeline immediately...")
+            res = daily_scheduler.execute_daily_pipeline(force=True)
+            print(f"\nExecution Result: {res.get('status')}")
+            if res.get("title"):
+                print(f"Book Published: {res.get('title')} ({res.get('slug')})")
+                print(f"Interior PDF:   {res.get('pdf_interior')}")
+                print(f"Cover Wrap:     {res.get('cover_wrap_pdf')}")
+                print(f"Auto-Upload:    {res.get('upload_job_ids') or res.get('upload_job_id')}")
+
+        elif action == "enable":
+            daily_scheduler.update_config(enabled=True)
+            print("✅ Scheduled auto-publishing enabled.")
+
+        elif action == "disable":
+            daily_scheduler.update_config(enabled=False)
+            print("⏸️ Scheduled auto-publishing disabled.")
+
+        elif action == "set":
+            sw = None
+            if args.startup_wait is not None:
+                sw = args.startup_wait.lower() == "true"
+            daily_scheduler.update_config(
+                interval_hours=args.interval,
+                scheduled_time=args.time,
+                auto_upload=args.upload,
+                category=args.category,
+                startup_prereq_wait=sw
+            )
+            print("✅ Schedule settings updated successfully:")
+            st = daily_scheduler.get_status()
+            print(f"  Interval:    Every {st.get('interval_hours')} Hours")
+            print(f"  Anchor Time: {st.get('scheduled_time')} IST")
+            print(f"  Auto-Upload: {st.get('auto_upload').upper()}")
+
+    elif args.command == "startup-sentry":
+        from core.background_orchestrator import BackgroundPublishingOrchestrator
+        orch = BackgroundPublishingOrchestrator()
+        print("\n" + "=" * 75)
+        print("🛡️  PUBLISHER AI — STARTUP PREREQUISITE SENTRY  🛡️")
+        print("=" * 75)
+        print("Waiting for YouTube Agent and Social Media Agent to finish before generating book...")
+        print(f"Poll Interval: {args.poll_interval}s | Timeout: {args.timeout}s | Target Upload: {args.auto_upload.upper()}\n")
+        res = orch.watch_and_run(
+            poll_interval_seconds=args.poll_interval,
+            max_wait_seconds=args.timeout,
+            auto_upload=args.auto_upload,
+            force=args.force
+        )
+        print(f"\nSentry Completed with status: {res.get('status')}")
+        if res.get("title"):
+            print(f"Book Generated: {res.get('title')} ({res.get('slug')})")
+
 if __name__ == "__main__":
     main()
 
