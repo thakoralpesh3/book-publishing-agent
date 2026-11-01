@@ -494,6 +494,15 @@ class BackgroundPublishingOrchestrator:
         logger.info(f"👀 [PublisheR AI Sentry] Watching for YouTube & Social agents completion (polling every {poll_interval_seconds}s, max wait {max_wait_seconds}s)...")
         start_time = time.time()
 
+        # On Sentry startup, immediately attempt upload of any stored pending contents
+        try:
+            from uploader.pending_queue import pending_queue
+            startup_pq = pending_queue.process_startup_stored_contents(force=True)
+            if startup_pq.get("dispatched_count", 0) > 0:
+                logger.info(f"🔄 Auto-dispatched {startup_pq['dispatched_count']} stored pending upload(s) upon sentry startup.")
+        except Exception as pq_err:
+            logger.debug(f"Sentry pending queue check notice: {pq_err}")
+
         while (time.time() - start_time) < max_wait_seconds:
             status = self.check_prerequisite_agents_status()
             logger.debug(f"Sentry poll: YT running={status['youtube']['running']}, Social running={status['social']['running']}, Done={status['prerequisites_finished']}")

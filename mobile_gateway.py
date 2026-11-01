@@ -282,6 +282,16 @@ class MobileGatewayWatchdog:
         except Exception as ds_e:
             logger.warning(f"Could not initialize DailyPublishScheduler: {ds_e}")
 
+        # Check and auto-upload any stored contents on startup
+        try:
+            from uploader.pending_queue import pending_queue
+            logger.info("🔄 [Agent Startup] Checking for previously stored contents in pending upload queue...")
+            startup_upload_res = pending_queue.process_startup_stored_contents(force=True)
+            if startup_upload_res.get("dispatched_count", 0) > 0:
+                logger.info(f"🚀 [Agent Startup] Auto-dispatched {startup_upload_res['dispatched_count']} stored book upload job(s) from previous sessions!")
+        except Exception as startup_pq_e:
+            logger.warning(f"Could not process startup stored uploads: {startup_pq_e}")
+
         iteration = 0
         while self.running:
             try:
