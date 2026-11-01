@@ -38,7 +38,7 @@
       "slug": "test_book_run",
       "platform": "flipkart",
       "title": "The Focused Mind",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -62,7 +62,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-01 23:23:15"
     },
     {
       "id": "pending_kdp_the_7-day_mindset_reset_1793553582",
