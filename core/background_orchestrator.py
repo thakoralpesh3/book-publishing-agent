@@ -232,7 +232,7 @@ class BackgroundPublishingOrchestrator:
             logger.info(f"✨ [PublisheR AI Background] 8-Hour interval cooldown active ({remaining_mins} mins remaining). Skipping (use force=True to override).")
             return {
                 "status": "skipped",
-                "message": f"8-hour interval cooldown active ({remaining_mins} mins remaining)",
+                "message": f"Daily book limit reached or 8-hour interval cooldown active ({remaining_mins} mins remaining)",
                 "date": today_str
             }
 
