@@ -6,7 +6,7 @@
       "slug": "test_book_run",
       "platform": "kdp",
       "title": "The Focused Mind",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -30,7 +30,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-01 23:25:59"
     },
     {
       "id": "pending_flipkart_test_book_run_1793553582",
