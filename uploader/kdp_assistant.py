@@ -66,6 +66,7 @@ class KDPAssistant:
             )
 
             page = context.new_page()
+            session_error = None
             try:
                 log("Navigating to Amazon KDP Bookshelf (https://kdp.amazon.com/bookshelf)...", 20)
                 try:
@@ -131,8 +132,6 @@ class KDPAssistant:
                         log("Browser window was closed by user.")
                         break
                     time.sleep(2)
-
-            session_error = None
             except Exception as e:
                 session_error = str(e)
                 log(f"KDP Assistant session exception: {e}")
