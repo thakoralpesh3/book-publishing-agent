@@ -380,19 +380,44 @@ async def create_book_endpoint(req: BookGenerationRequest):
 
         # 7. Optional: Launch Auto-Upload Assistant immediately if requested
         auto_upload_job_id = None
+        auto_upload_job_ids = []
         if req.auto_upload and req.auto_upload.lower() in ["kdp", "amazon", "flipkart", "both"]:
-            try:
-                from uploader.upload_manager import start_upload_job
-                target_platform = "kdp" if req.auto_upload.lower() in ["kdp", "amazon", "both"] else "flipkart"
-                auto_upload_job_id = start_upload_job(
-                    slug=book_data["slug"],
-                    platform=target_platform,
-                    headless=False,
-                    auto_advance=True
-                )
-                logger.info(f"Auto-upload assistant triggered for {target_platform.upper()} (Job ID: {auto_upload_job_id})")
-            except Exception as e:
-                logger.warning(f"Could not auto-start upload job: {e}")
+            platforms_to_start = []
+            if req.auto_upload.lower() in ["kdp", "amazon"]:
+                platforms_to_start = ["kdp"]
+            elif req.auto_upload.lower() == "flipkart":
+                platforms_to_start = ["flipkart"]
+            elif req.auto_upload.lower() in ["both", "all"]:
+                platforms_to_start = ["kdp", "flipkart"]
+
+            for plat in platforms_to_start:
+                try:
+                    from uploader.upload_manager import start_upload_job
+                    jid = start_upload_job(
+                        slug=book_data["slug"],
+                        platform=plat,
+                        headless=False,
+                        auto_advance=True
+                    )
+                    auto_upload_job_ids.append(jid)
+                    if not auto_upload_job_id:
+                        auto_upload_job_id = jid
+                    logger.info(f"Auto-upload assistant triggered for {plat.upper()} (Job ID: {jid})")
+                except Exception as e:
+                    logger.warning(f"Could not auto-start upload job for {plat.upper()}: {e}")
+                    try:
+                        from uploader.pending_queue import pending_queue
+                        pending_queue.add_or_update(
+                            slug=book_data["slug"],
+                            platform=plat,
+                            error_reason=f"Failed to launch upload assistant: {e}",
+                            failure_reason=f"Failed to launch upload assistant: {e}",
+                            failure_stage="init_upload",
+                            title=book_data.get("title")
+                        )
+                        logger.info(f"💾 Content saved: {book_data['slug']} ({plat.upper()}) enqueued for auto-upload upon agent restart.")
+                    except Exception as q_err:
+                        logger.error(f"Failed to save to pending queue: {q_err}")
 
         return {
             "status": "success",
