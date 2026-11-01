@@ -119,12 +119,51 @@ def run_generate_cli(
         print("="*70)
         if upload.lower() in ["kdp", "amazon", "both"]:
             print("\nLaunching Amazon KDP Upload Assistant...")
-            kdp = KDPAssistant()
-            kdp.launch_assisted_session(book_dir, headless=False)
+            try:
+                kdp = KDPAssistant()
+                res = kdp.launch_assisted_session(book_dir, headless=False)
+                if res.get("status") in ["failed", "error"]:
+                    from uploader.pending_queue import pending_queue
+                    pending_queue.add_or_update(
+                        slug=book_dir.name,
+                        platform="kdp",
+                        error_reason=res.get("message", "KDP upload failed"),
+                        title=book_data.get("title")
+                    )
+                    print(f"💾 Content saved! Preserved {book_dir.name} in pending queue for auto-retry on agent restart.")
+            except Exception as e:
+                from uploader.pending_queue import pending_queue
+                pending_queue.add_or_update(
+                    slug=book_dir.name,
+                    platform="kdp",
+                    error_reason=str(e),
+                    title=book_data.get("title")
+                )
+                print(f"💾 Content saved! Upload interrupted ({e}). Preserved in pending queue for auto-retry on agent restart.")
+
         if upload.lower() in ["flipkart", "both"]:
             print("\nLaunching Flipkart Seller Hub Assistant...")
-            fk = FlipkartAssistant()
-            fk.launch_assisted_session(book_dir, headless=False)
+            try:
+                fk = FlipkartAssistant()
+                res = fk.launch_assisted_session(book_dir, headless=False)
+                if res.get("status") in ["failed", "error"]:
+                    from uploader.pending_queue import pending_queue
+                    pending_queue.add_or_update(
+                        slug=book_dir.name,
+                        platform="flipkart",
+                        error_reason=res.get("message", "Flipkart upload failed"),
+                        title=book_data.get("title")
+                    )
+                    print(f"💾 Content saved! Preserved {book_dir.name} in pending queue for auto-retry on agent restart.")
+            except Exception as e:
+                from uploader.pending_queue import pending_queue
+                pending_queue.add_or_update(
+                    slug=book_dir.name,
+                    platform="flipkart",
+                    error_reason=str(e),
+                    title=book_data.get("title")
+                )
+                print(f"💾 Content saved! Upload interrupted ({e}). Preserved in pending queue for auto-retry on agent restart.")
 
 def _open_browser_after_healthy(url: str, port: int):
     """Waits until FastAPI is healthy before opening the browser to prevent 'Unable to connect' error."""
