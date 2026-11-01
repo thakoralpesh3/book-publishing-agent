@@ -273,6 +273,15 @@ class MobileGatewayWatchdog:
         except Exception as gw_e:
             logger.warning(f"Could not initialize GitAutoSyncWatcher: {gw_e}")
 
+        # Start Autonomous 11:30 PM Daily Publishing Scheduler
+        try:
+            from core.daily_scheduler import daily_scheduler
+            self.daily_scheduler = daily_scheduler
+            self.daily_scheduler.start()
+            logger.info("⏰ Autonomous 11:30 PM Daily Publishing Scheduler active in 24/7 background.")
+        except Exception as ds_e:
+            logger.warning(f"Could not initialize DailyPublishScheduler: {ds_e}")
+
         iteration = 0
         while self.running:
             try:
@@ -329,6 +338,11 @@ class MobileGatewayWatchdog:
     def shutdown(self):
         """Clean shutdown of child processes."""
         self.running = False
+        if self.daily_scheduler:
+            try:
+                self.daily_scheduler.stop()
+            except Exception:
+                pass
         if self.git_watcher:
             try:
                 self.git_watcher.stop()
@@ -351,12 +365,20 @@ def get_mobile_status(port: int = 8550) -> Dict[str, Any]:
         except Exception:
             pass
 
+    sched_status = None
+    try:
+        from core.daily_scheduler import daily_scheduler
+        sched_status = daily_scheduler.get_status()
+    except Exception:
+        pass
+
     return {
         "status": "ONLINE" if url else "OFFLINE",
         "port": port,
         "public_url": url or f"http://127.0.0.1:{port}",
         "has_public_tunnel": bool(url),
         "qr_code_url": "/static/mobile_qr.png" if QR_CODE_FILE.exists() else None,
+        "daily_scheduler": sched_status,
         "agents": {
             "amazon_kdp_agent": {
                 "name": "Amazon KDP Agent",
