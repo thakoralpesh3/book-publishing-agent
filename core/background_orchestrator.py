@@ -301,25 +301,34 @@ class BackgroundPublishingOrchestrator:
             self._record_completion(book_data)
 
             # Trigger auto-upload assistant if requested
-            upload_job_id = None
+            upload_job_ids = []
             if auto_upload and auto_upload.lower() != "none":
                 try:
                     from uploader.upload_manager import start_upload_job
-                    plat = "kdp" if auto_upload.lower() in ["kdp", "amazon", "both"] else "flipkart"
-                    upload_job_id = start_upload_job(
-                        slug=book_data["slug"],
-                        platform=plat,
-                        headless=True,
-                        auto_advance=True
-                    )
-                    logger.info(f"Background pipeline initiated auto-upload for {plat.upper()} (Job ID: {upload_job_id})")
+                    platforms_to_upload = []
+                    if auto_upload.lower() in ["kdp", "amazon"]:
+                        platforms_to_upload = ["kdp"]
+                    elif auto_upload.lower() == "flipkart":
+                        platforms_to_upload = ["flipkart"]
+                    elif auto_upload.lower() in ["both", "all"]:
+                        platforms_to_upload = ["kdp", "flipkart"]
+
+                    for plat in platforms_to_upload:
+                        jid = start_upload_job(
+                            slug=book_data["slug"],
+                            platform=plat,
+                            headless=True,
+                            auto_advance=True
+                        )
+                        upload_job_ids.append(jid)
+                        logger.info(f"Background pipeline initiated auto-upload for {plat.upper()} (Job ID: {jid})")
                 except Exception as e:
                     logger.warning(f"Could not initiate auto-upload in background pipeline: {e}")
 
             # Send completion notification
             notif_msg = f"Completed: \"{book_data['title']}\" ({final_pages} pages). Zero-Mistake Audit: {audit_report.get('compliance_score')}."
-            if upload_job_id:
-                notif_msg += f" Upload Assistant active ({auto_upload.upper()})."
+            if upload_job_ids:
+                notif_msg += f" Auto-Post active for {auto_upload.upper()} ({len(upload_job_ids)} jobs)."
             self._send_notification(
                 "✅ PublisheR AI: Daily Book Package Ready!",
                 notif_msg,
@@ -355,7 +364,8 @@ class BackgroundPublishingOrchestrator:
                 "flipkart_excel": export_files["flipkart_excel"],
                 "amazon_markdown": export_files["amazon_markdown"],
                 "audit": audit_report,
-                "upload_job_id": upload_job_id
+                "upload_job_id": upload_job_ids[0] if upload_job_ids else None,
+                "upload_job_ids": upload_job_ids
             }
 
         except Exception as e:
