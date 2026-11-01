@@ -750,16 +750,27 @@
                 </div>
             </div>
 
-            <!-- PublisheR AI Quota Card -->
+            <!-- PublisheR AI 8-Hour Schedule & Quota Card -->
             <div class="space-y-1.5 bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs">
-                <div class="font-semibold text-slate-300 mb-1">PublisheR AI Daily Quota:</div>
+                <div class="font-semibold text-slate-300 mb-1 flex items-center justify-between">
+                    <span>Autonomous Auto-Publish Schedule:</span>
+                    <span class="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold">Every 8 Hours</span>
+                </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-slate-400">Today's Publishing Status:</span>
+                    <span class="text-slate-400">Next Scheduled Run:</span>
+                    <span id="bgStatusNextRun" class="font-semibold text-cyan-300 font-mono">Calculating...</span>
+                </div>
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Publishing Status:</span>
                     <span id="bgStatusDailyState" class="font-semibold text-emerald-400">Ready</span>
                 </div>
                 <div class="flex items-center justify-between">
+                    <span class="text-slate-400">Auto-Post Destination:</span>
+                    <span class="text-amber-300 font-semibold">Amazon KDP + Flipkart</span>
+                </div>
+                <div class="flex items-center justify-between">
                     <span class="text-slate-400">Runs Today:</span>
-                    <span id="bgStatusRunsCount" class="font-mono text-slate-200">0 / 1</span>
+                    <span id="bgStatusRunsCount" class="font-mono text-slate-200">0 / 3</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-slate-400">Last Publication:</span>
