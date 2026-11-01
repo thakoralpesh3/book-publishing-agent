@@ -137,7 +137,7 @@
       "slug": "how_to_draw_cute_animals_and_easy_doodles",
       "platform": "kdp",
       "title": "How to Draw Cute Animals and Easy Doodles",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -161,7 +161,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-01 23:26:19"
     },
     {
       "id": "pending_flipkart_how_to_draw_cute_animals_and_easy_doodles_1793553582",
@@ -202,7 +203,7 @@
       "slug": "the_2026_micro-saas_playbook__building_automated_d",
       "platform": "kdp",
       "title": "The 2026 Micro-SaaS Playbook: Building Automated Digital Assets",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -226,7 +227,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-01 23:26:16"
     },
     {
       "id": "pending_flipkart_the_2026_micro-saas_playbook__building_automated_d_1793553582",
