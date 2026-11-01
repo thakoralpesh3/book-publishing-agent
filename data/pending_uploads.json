@@ -103,7 +103,7 @@
       "slug": "the_7-day_mindset_reset",
       "platform": "flipkart",
       "title": "The 7-Day Mindset Reset",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -127,7 +127,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-01 23:24:39"
     },
     {
       "id": "pending_kdp_how_to_draw_cute_animals_and_easy_doodles_1793553582",
@@ -167,7 +168,7 @@
       "slug": "how_to_draw_cute_animals_and_easy_doodles",
       "platform": "flipkart",
       "title": "How to Draw Cute Animals and Easy Doodles",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -191,7 +192,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-01 23:24:38"
     },
     {
       "id": "pending_kdp_the_2026_micro-saas_playbook__building_automated_d_1793553582",
