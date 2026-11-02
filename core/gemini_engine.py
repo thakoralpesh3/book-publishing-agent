@@ -6,12 +6,15 @@ Amazon KDP compliant descriptions/keywords, and Flipkart catalog attributes.
 import json
 import logging
 import re
+import time
 from typing import Dict, Any, List, Optional
 from google import genai
 from google.genai import types
 import config
 
 logger = logging.getLogger(__name__)
+
+_EXHAUSTED_MODELS = set()
 
 class GeminiBookEngine:
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
@@ -27,10 +30,20 @@ class GeminiBookEngine:
             self._client = genai.Client(
                 api_key=self.api_key,
                 http_options=types.HttpOptions(
+                    timeout=90000,
                     retry_options=types.HttpRetryOptions(attempts=1)
                 )
             )
         return self._client
+
+    def _get_candidate_models(self) -> List[str]:
+        """Returns ordered model candidate list filtering out models already exhausted in this session."""
+        all_models = [self.model] + [m for m in config.DEFAULT_MODELS if m != self.model]
+        candidates = [m for m in all_models if m not in _EXHAUSTED_MODELS]
+        if not candidates:
+            _EXHAUSTED_MODELS.clear()
+            return all_models
+        return candidates
 
     def get_model_status(self) -> Dict[str, Any]:
         """Returns details about the active primary model, Gemini 4 Argon specifications, and fallbacks."""
@@ -49,12 +62,12 @@ class GeminiBookEngine:
 
     def generate_text(self, prompt: str, system_instruction: Optional[str] = None) -> str:
         """Standard text generation call with retries, exponential backoff, and model fallback."""
-        models_to_try = [self.model] + [m for m in config.DEFAULT_MODELS if m != self.model]
+        models_to_try = self._get_candidate_models()
         last_error = None
         for model_name in models_to_try:
             # Set high output tokens for Gemini 4 Argon (32K capacity)
             max_tokens = 16384 if ("argon" in model_name or "4" in model_name) else 4096
-            for attempt in range(3):
+            for attempt in range(2):
                 try:
                     cfg = types.GenerateContentConfig(
                         system_instruction=system_instruction,
@@ -77,17 +90,19 @@ class GeminiBookEngine:
                     err_str = str(e)
                     last_error = e
 
-                    # If model has 0 quota or quota is completely exhausted, immediately cascade to next model
-                    if "limit: 0" in err_str or "limit:0" in err_str or "quota exceeded for metric" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                        logger.info(f"Model {model_name} quota unavailable on current key ({err_str[:80]}...). Cascading to next fallback model...")
+                    # Fast cascade and memoization on quota exhaustion
+                    if any(x in err_str for x in ["limit: 0", "limit:0", "quota exceeded", "RESOURCE_EXHAUSTED", "429"]):
+                        logger.info(f"Model {model_name} quota exhausted ({err_str[:80]}...). Bypassing for this session.")
+                        _EXHAUSTED_MODELS.add(model_name)
                         break
 
-                    if "503" in err_str or "429" in err_str or "high demand" in err_str:
-                        sleep_time = (attempt + 1) * 2
-                        logger.warning(f"Model {model_name} busy (attempt {attempt+1}/3: {err_str[:80]}...). Waiting {sleep_time}s...")
-                        import time
-                        time.sleep(sleep_time)
-                        continue
+                    if "503" in err_str or "high demand" in err_str or "UNAVAILABLE" in err_str:
+                        if attempt == 0:
+                            logger.warning(f"Model {model_name} busy. Waiting 1s before retry...")
+                            time.sleep(1)
+                            continue
+                        logger.warning(f"Model {model_name} unavailable. Cascading to next fallback...")
+                        break
                     else:
                         logger.warning(f"Model {model_name} failed: {e}. Trying next model fallback...")
                         break
@@ -95,11 +110,11 @@ class GeminiBookEngine:
 
     def generate_json(self, prompt: str, system_instruction: Optional[str] = None) -> Dict[str, Any]:
         """Generates structured JSON with retries, exponential backoff, and fallback."""
-        models_to_try = [self.model] + [m for m in config.DEFAULT_MODELS if m != self.model]
+        models_to_try = self._get_candidate_models()
         last_error = None
         for model_name in models_to_try:
             max_tokens = 8192 if ("argon" in model_name or "4" in model_name) else 4096
-            for attempt in range(3):
+            for attempt in range(2):
                 try:
                     cfg = types.GenerateContentConfig(
                         system_instruction=system_instruction,
@@ -128,17 +143,17 @@ class GeminiBookEngine:
                     err_str = str(e)
                     last_error = e
 
-                    # Fast cascade on quota exhaustion
-                    if "limit: 0" in err_str or "limit:0" in err_str or "quota exceeded for metric" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                        logger.info(f"Model {model_name} JSON quota unavailable. Cascading to next fallback model...")
+                    # Fast cascade and memoization on quota exhaustion
+                    if any(x in err_str for x in ["limit: 0", "limit:0", "quota exceeded", "RESOURCE_EXHAUSTED", "429"]):
+                        logger.info(f"Model {model_name} JSON quota exhausted ({err_str[:80]}...). Bypassing for this session.")
+                        _EXHAUSTED_MODELS.add(model_name)
                         break
 
-                    if "503" in err_str or "429" in err_str or "high demand" in err_str:
-                        sleep_time = (attempt + 1) * 2
-                        logger.warning(f"Model {model_name} busy for JSON (attempt {attempt+1}/3). Waiting {sleep_time}s...")
-                        import time
-                        time.sleep(sleep_time)
-                        continue
+                    if "503" in err_str or "high demand" in err_str or "UNAVAILABLE" in err_str:
+                        if attempt == 0:
+                            time.sleep(1)
+                            continue
+                        break
                     else:
                         logger.warning(f"Model {model_name} failed JSON gen: {e}. Trying next fallback...")
                         break
