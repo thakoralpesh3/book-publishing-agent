@@ -25,13 +25,14 @@ on:
       model:
         description: 'Gemini Model'
         required: true
-        default: 'gemini-4-argon'
+        default: 'gemini-3.1-flash-lite'
         type: choice
         options:
+          - 'gemini-3.1-flash-lite'
+          - 'gemini-3.5-flash'
           - 'gemini-4-argon'
           - 'gemini-3.7-flash'
           - 'gemini-3.8-flash'
-          - 'gemini-3.5-flash'
       chapters:
         description: 'Number of Chapters'
         required: true
