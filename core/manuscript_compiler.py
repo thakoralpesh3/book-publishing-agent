@@ -231,116 +231,128 @@ class ManuscriptCompiler:
             spaceAfter=6
         )
 
-        story = []
+        def build_story(extra_notes: int = 0) -> list:
+            story = []
 
-        # 1. Half Title Page
-        story.append(Spacer(1, 100))
-        story.append(Paragraph(title, title_style))
-        story.append(PageBreak())
-
-        # 2. Full Title Page
-        story.append(Spacer(1, 70))
-        story.append(Paragraph(title, title_style))
-        if subtitle:
-            story.append(Paragraph(subtitle, subtitle_style))
-        story.append(Spacer(1, 60))
-        story.append(Paragraph(f"By {author}", author_style))
-        story.append(Spacer(1, 40))
-        story.append(Paragraph(f"Published by {publisher}", publisher_style))
-        story.append(PageBreak())
-
-        # 3. Copyright Page
-        story.append(Spacer(1, 180))
-        story.append(Paragraph(f"<b>{title}</b>", copyright_style))
-        if subtitle:
-            story.append(Paragraph(f"<i>{subtitle}</i>", copyright_style))
-        story.append(Spacer(1, 8))
-        story.append(Paragraph(f"Copyright © 2026 by {author}.", copyright_style))
-        story.append(Paragraph("All rights reserved. No part of this publication may be reproduced, stored in a retrieval system, or transmitted in any form or by any means without prior written permission of the publisher.", copyright_style))
-        story.append(Spacer(1, 8))
-        story.append(Paragraph(f"Publisher: {publisher}", copyright_style))
-        story.append(Paragraph(f"Trim Size: {self.trim_size} inches", copyright_style))
-        story.append(Paragraph("First Edition: 2026", copyright_style))
-        story.append(PageBreak())
-
-        # 4. Dedication / Preface
-        front_back = book_data.get("front_back", {})
-        if front_back.get("dedication"):
-            story.append(Spacer(1, 120))
-            story.append(Paragraph("<i>" + front_back["dedication"] + "</i>", ParagraphStyle('Dedication', parent=quote_style, alignment=1)))
+            # 1. Half Title Page
+            story.append(Spacer(1, 100))
+            story.append(Paragraph(title, title_style))
             story.append(PageBreak())
 
-        if front_back.get("preface"):
-            story.append(Paragraph("Preface", chapter_head_style))
-            story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#CBD5E1"), spaceAfter=14))
-            for para in front_back["preface"].split("\n\n"):
-                if para.strip():
-                    story.append(Paragraph(para.strip(), body_style))
+            # 2. Full Title Page
+            story.append(Spacer(1, 70))
+            story.append(Paragraph(title, title_style))
+            if subtitle:
+                story.append(Paragraph(subtitle, subtitle_style))
+            story.append(Spacer(1, 60))
+            story.append(Paragraph(f"By {author}", author_style))
+            story.append(Spacer(1, 40))
+            story.append(Paragraph(f"Published by {publisher}", publisher_style))
             story.append(PageBreak())
 
-        # 5. Body Chapters
-        chapters = book_data.get("chapters", [])
-        for ch in chapters:
-            content = ch.get("content", "")
-            lines = content.split("\n")
-
-            for line in lines:
-                line_str = line.strip()
-                if not line_str:
-                    continue
-
-                if line_str.startswith("# "):
-                    ch_title = line_str.replace("# ", "").strip()
-                    story.append(Paragraph(ch_title, chapter_head_style))
-                    story.append(HRFlowable(width="100%", thickness=1, color=HexColor("#0F172A"), spaceAfter=14))
-                elif line_str.startswith("## "):
-                    sec_title = line_str.replace("## ", "").strip()
-                    story.append(Paragraph(sec_title, section_head_style))
-                elif line_str.startswith("### "):
-                    sub_title = line_str.replace("### ", "").strip()
-                    story.append(Paragraph(sub_title, section_head_style))
-                elif line_str.startswith(">"):
-                    q_text = line_str.replace(">", "").strip()
-                    story.append(Paragraph(f"<i>“{q_text}”</i>", quote_style))
-                elif line_str.startswith(("- ", "* ", "• ")):
-                    b_text = re.sub(r"^[-*•]\s*", "", line_str)
-                    story.append(Paragraph(f"• {b_text}", bullet_style))
-                elif re.match(r"^\d+\.\s", line_str):
-                    num_text = line_str
-                    story.append(Paragraph(num_text, bullet_style))
-                elif "[DRAWING_PRACTICE_GRID" in line_str:
-                    match = re.search(r"\[DRAWING_PRACTICE_GRID(?::\s*([^\]]+))?\]", line_str)
-                    subject_name = match.group(1).strip() if match and match.group(1) else "Creative Sketch"
-                    story.append(Spacer(1, 8))
-                    story.append(self._create_drawing_canvas(subject_name, avail_width, is_large_format))
-                    story.append(Spacer(1, 14))
-                elif line_str == "---":
-                    story.append(HRFlowable(width="40%", thickness=0.5, color=HexColor("#94A3B8"), spaceBefore=10, spaceAfter=10))
-                else:
-                    # Clean bold / italic markdown for ReportLab
-                    clean_para = line_str
-                    clean_para = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", clean_para)
-                    clean_para = re.sub(r"\*(.*?)\*", r"<i>\1</i>", clean_para)
-                    story.append(Paragraph(clean_para, body_style))
-
-
+            # 3. Copyright Page
+            story.append(Spacer(1, 180))
+            story.append(Paragraph(f"<b>{title}</b>", copyright_style))
+            if subtitle:
+                story.append(Paragraph(f"<i>{subtitle}</i>", copyright_style))
+            story.append(Spacer(1, 8))
+            story.append(Paragraph(f"Copyright © 2026 by {author}.", copyright_style))
+            story.append(Paragraph("All rights reserved. No part of this publication may be reproduced, stored in a retrieval system, or transmitted in any form or by any means without prior written permission of the publisher.", copyright_style))
+            story.append(Spacer(1, 8))
+            story.append(Paragraph(f"Publisher: {publisher}", copyright_style))
+            story.append(Paragraph(f"Trim Size: {self.trim_size} inches", copyright_style))
+            story.append(Paragraph("First Edition: 2026", copyright_style))
             story.append(PageBreak())
 
-        # 6. Back Matter: CTA & About Author
-        if front_back.get("review_cta"):
-            story.append(Paragraph("A Message from the Author", chapter_head_style))
-            story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#CBD5E1"), spaceAfter=14))
-            for para in front_back["review_cta"].split("\n\n"):
-                if para.strip():
-                    story.append(Paragraph(para.strip(), body_style))
-            story.append(Spacer(1, 20))
+            # 4. Dedication / Preface
+            front_back = book_data.get("front_back", {})
+            if front_back.get("dedication"):
+                story.append(Spacer(1, 120))
+                story.append(Paragraph("<i>" + front_back["dedication"] + "</i>", ParagraphStyle('Dedication', parent=quote_style, alignment=1)))
+                story.append(PageBreak())
 
-        if front_back.get("author_bio"):
-            story.append(Paragraph("About the Author", chapter_head_style))
-            story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#CBD5E1"), spaceAfter=14))
-            for para in front_back["author_bio"].split("\n\n"):
-                if para.strip():
-                    story.append(Paragraph(para.strip(), body_style))
+            if front_back.get("preface"):
+                story.append(Paragraph("Preface", chapter_head_style))
+                story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#CBD5E1"), spaceAfter=14))
+                for para in front_back["preface"].split("\n\n"):
+                    if para.strip():
+                        story.append(Paragraph(para.strip(), body_style))
+                story.append(PageBreak())
+
+            # 5. Body Chapters
+            chapters = book_data.get("chapters", [])
+            for ch in chapters:
+                content = ch.get("content", "")
+                lines = content.split("\n")
+
+                for line in lines:
+                    line_str = line.strip()
+                    if not line_str:
+                        continue
+
+                    if line_str.startswith("# "):
+                        ch_title = line_str.replace("# ", "").strip()
+                        story.append(Paragraph(ch_title, chapter_head_style))
+                        story.append(HRFlowable(width="100%", thickness=1, color=HexColor("#0F172A"), spaceAfter=14))
+                    elif line_str.startswith("## "):
+                        sec_title = line_str.replace("## ", "").strip()
+                        story.append(Paragraph(sec_title, section_head_style))
+                    elif line_str.startswith("### "):
+                        sub_title = line_str.replace("### ", "").strip()
+                        story.append(Paragraph(sub_title, section_head_style))
+                    elif line_str.startswith(">"):
+                        q_text = line_str.replace(">", "").strip()
+                        story.append(Paragraph(f"<i>“{q_text}”</i>", quote_style))
+                    elif line_str.startswith(("- ", "* ", "• ")):
+                        b_text = re.sub(r"^[-*•]\s*", "", line_str)
+                        story.append(Paragraph(f"• {b_text}", bullet_style))
+                    elif re.match(r"^\d+\.\s", line_str):
+                        num_text = line_str
+                        story.append(Paragraph(num_text, bullet_style))
+                    elif "[DRAWING_PRACTICE_GRID" in line_str:
+                        match = re.search(r"\[DRAWING_PRACTICE_GRID(?::\s*([^\]]+))?\]", line_str)
+                        subject_name = match.group(1).strip() if match and match.group(1) else "Creative Sketch"
+                        story.append(Spacer(1, 8))
+                        story.append(self._create_drawing_canvas(subject_name, avail_width, is_large_format))
+                        story.append(Spacer(1, 14))
+                    elif line_str == "---":
+                        story.append(HRFlowable(width="40%", thickness=0.5, color=HexColor("#94A3B8"), spaceBefore=10, spaceAfter=10))
+                    else:
+                        # Clean bold / italic markdown for ReportLab
+                        clean_para = line_str
+                        clean_para = re.sub(r"\*\*(.*?)\*\*", r"<b>\1</b>", clean_para)
+                        clean_para = re.sub(r"\*(.*?)\*", r"<i>\1</i>", clean_para)
+                        story.append(Paragraph(clean_para, body_style))
+
+                story.append(PageBreak())
+
+            # 6. Back Matter: CTA & About Author
+            if front_back.get("review_cta"):
+                story.append(Paragraph("A Message from the Author", chapter_head_style))
+                story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#CBD5E1"), spaceAfter=14))
+                for para in front_back["review_cta"].split("\n\n"):
+                    if para.strip():
+                        story.append(Paragraph(para.strip(), body_style))
+                story.append(Spacer(1, 20))
+
+            if front_back.get("author_bio"):
+                story.append(Paragraph("About the Author", chapter_head_style))
+                story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#CBD5E1"), spaceAfter=14))
+                for para in front_back["author_bio"].split("\n\n"):
+                    if para.strip():
+                        story.append(Paragraph(para.strip(), body_style))
+
+            # Reader Notes & Action Plan pages if padding requested
+            if extra_notes > 0:
+                for p_idx in range(1, extra_notes + 1):
+                    story.append(PageBreak())
+                    story.append(Paragraph(f"Reader Notes &amp; Action Plan (Part {p_idx})", section_head_style))
+                    story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#CBD5E1"), spaceAfter=14))
+                    for _ in range(8 if is_large_format else 6):
+                        story.append(Spacer(1, 24))
+                        story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#E2E8F0"), spaceAfter=6))
+
+            return story
 
         # Build PDF with canvas
         def make_canvas(*args, **kwargs):
@@ -348,24 +360,16 @@ class ManuscriptCompiler:
             c.book_title = title
             return c
 
-        doc.build(list(story), canvasmaker=make_canvas)
+        create_doc_template().build(build_story(0), canvasmaker=make_canvas)
 
         # Inspect generated PDF page count
         final_page_count = self._count_pdf_pages(output_path)
 
         # Amazon KDP Paperback strictly requires at least 24 pages.
-        # If below 24 pages, append structured Implementation & Notes pages.
+        # If below 24 pages, append fresh structured Implementation & Notes pages.
         if final_page_count < 24:
             pages_needed = 24 - final_page_count
-            for p_idx in range(1, pages_needed + 1):
-                story.append(PageBreak())
-                story.append(Paragraph(f"Reader Notes &amp; Action Plan (Part {p_idx})", section_head_style))
-                story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#CBD5E1"), spaceAfter=14))
-                for _ in range(8 if is_large_format else 6):
-                    story.append(Spacer(1, 24))
-                    story.append(HRFlowable(width="100%", thickness=0.5, color=HexColor("#E2E8F0"), spaceAfter=6))
-            doc = create_doc_template()
-            doc.build(list(story), canvasmaker=make_canvas)
+            create_doc_template().build(build_story(pages_needed), canvasmaker=make_canvas)
             final_page_count = self._count_pdf_pages(output_path)
 
         return {
