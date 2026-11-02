@@ -80,7 +80,7 @@ jobs:
   publish-book:
     name: Generate Publication-Grade Book
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
 
     steps:
       - name: Checkout Repository
@@ -105,7 +105,7 @@ jobs:
       - name: Run Book Publishing Engine
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ inputs.model || 'gemini-4-argon' }}
+          GEMINI_MODEL: ${{ inputs.model || 'gemini-3.1-flash-lite' }}
           DEFAULT_AUTHOR: ${{ inputs.author || 'Alpesh Patel' }}
           DEFAULT_PUBLISHER: ${{ inputs.publisher || 'InspireBooks Press' }}
           DEFAULT_MARKETPLACE: "Amazon.in"
@@ -125,7 +125,7 @@ jobs:
       - name: Run Preflight Zero-Mistake Audit
         env:
           RUN_NUMBER: ${{ github.run_number }}
-          CHOSEN_MODEL: ${{ inputs.model || 'gemini-4-argon' }}
+          CHOSEN_MODEL: ${{ inputs.model || 'gemini-3.1-flash-lite' }}
         run: |
           python3 scripts/cloud_audit_summary.py
 
