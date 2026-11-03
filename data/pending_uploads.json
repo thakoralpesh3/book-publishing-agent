@@ -270,7 +270,7 @@
       "slug": "kids_drawing_book__step-by-step_cute_animals__dood",
       "platform": "kdp",
       "title": "Kids Drawing Book: Step-by-Step Cute Animals, Doodles, and Simple Shapes",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -294,7 +294,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-03 18:22:00"
     },
     {
       "id": "pending_flipkart_kids_drawing_book__step-by-step_cute_animals__dood_1793709753",
