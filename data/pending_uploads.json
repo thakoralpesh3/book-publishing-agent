@@ -263,6 +263,70 @@
         "amazon_md"
       ],
       "completed_at": "2026-11-01 23:25:14"
+    },
+    {
+      "id": "pending_kdp_kids_drawing_book__step-by-step_cute_animals__dood_1793709753",
+      "queue_id": "pending_kdp_kids_drawing_book__step-by-step_cute_animals__dood_1793709753",
+      "slug": "kids_drawing_book__step-by-step_cute_animals__dood",
+      "platform": "kdp",
+      "title": "Kids Drawing Book: Step-by-Step Cute Animals, Doodles, and Simple Shapes",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-03 18:12:33",
+      "last_attempt": "2026-11-03 18:12:33",
+      "last_attempt_at": "2026-11-03 18:12:33",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793709813.1938448,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
+    },
+    {
+      "id": "pending_flipkart_kids_drawing_book__step-by-step_cute_animals__dood_1793709753",
+      "queue_id": "pending_flipkart_kids_drawing_book__step-by-step_cute_animals__dood_1793709753",
+      "slug": "kids_drawing_book__step-by-step_cute_animals__dood",
+      "platform": "flipkart",
+      "title": "Kids Drawing Book: Step-by-Step Cute Animals, Doodles, and Simple Shapes",
+      "status": "pending",
+      "error_reason": "Restored from disk storage on agent startup",
+      "failure_reason": "Restored from disk storage on agent startup",
+      "failure_stage": "upload",
+      "created_at": "2026-11-03 18:12:33",
+      "last_attempt": "2026-11-03 18:12:33",
+      "last_attempt_at": "2026-11-03 18:12:33",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1793709813.2030454,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
     }
   ]
 }
