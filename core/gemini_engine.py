@@ -67,7 +67,7 @@ class GeminiBookEngine:
         for model_name in models_to_try:
             # Set high output tokens for Gemini 4 Argon (32K capacity)
             max_tokens = 16384 if ("argon" in model_name or "4" in model_name) else 4096
-            for attempt in range(2):
+            for attempt in range(3):
                 try:
                     cfg = types.GenerateContentConfig(
                         system_instruction=system_instruction,
@@ -97,9 +97,10 @@ class GeminiBookEngine:
                         break
 
                     if "503" in err_str or "high demand" in err_str or "UNAVAILABLE" in err_str:
-                        if attempt == 0:
-                            logger.warning(f"Model {model_name} busy. Waiting 1s before retry...")
-                            time.sleep(1)
+                        if attempt < 2:
+                            wait_s = (attempt + 1) * 2
+                            logger.warning(f"Model {model_name} busy (503). Waiting {wait_s}s before retry {attempt+2}/3...")
+                            time.sleep(wait_s)
                             continue
                         logger.warning(f"Model {model_name} unavailable. Cascading to next fallback...")
                         break
@@ -114,7 +115,7 @@ class GeminiBookEngine:
         last_error = None
         for model_name in models_to_try:
             max_tokens = 8192 if ("argon" in model_name or "4" in model_name) else 4096
-            for attempt in range(2):
+            for attempt in range(3):
                 try:
                     cfg = types.GenerateContentConfig(
                         system_instruction=system_instruction,
@@ -150,8 +151,9 @@ class GeminiBookEngine:
                         break
 
                     if "503" in err_str or "high demand" in err_str or "UNAVAILABLE" in err_str:
-                        if attempt == 0:
-                            time.sleep(1)
+                        if attempt < 2:
+                            wait_s = (attempt + 1) * 2
+                            time.sleep(wait_s)
                             continue
                         break
                     else:
