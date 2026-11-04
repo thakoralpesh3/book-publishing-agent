@@ -30,9 +30,9 @@ def _get_api_key():
 GEMINI_API_KEY = _get_api_key()
 DEFAULT_MODELS = [
     "gemini-4-argon",
-    "gemini-3.1-flash-lite",
     "gemini-3.5-flash-lite",
     "gemini-flash-lite-latest",
+    "gemini-3.1-flash-lite",
     "gemini-3.5-flash",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
