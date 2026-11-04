@@ -103,8 +103,8 @@ class MobileGatewayWatchdog:
         with open(SERVER_PID_FILE, "w") as f:
             f.write(str(self.server_proc.pid))
 
-        # Wait up to 8 seconds for health verification
-        for _ in range(16):
+        # Wait up to 30 seconds for health verification on startup
+        for _ in range(60):
             time.sleep(0.5)
             if self.check_health():
                 logger.info(f"✅ Server successfully started & verified on port {self.port} (PID: {self.server_proc.pid})")
