@@ -302,6 +302,8 @@ class BackgroundPublishingOrchestrator:
 
             # Step 1: Draft Blueprint & Chapters
             logger.info("[1/5] Drafting book blueprint & chapters with Gemini...")
+            if not _wait_for_internet(max_wait_seconds=45):
+                logger.warning("Network connection not confirmed after 45s wait. Proceeding with generation...")
             book_data = writer.create_book(
                 topic=topic,
                 target_audience=audience,
@@ -368,7 +370,9 @@ class BackgroundPublishingOrchestrator:
                 elif auto_upload.lower() in ["both", "all"]:
                     platforms_to_upload = ["kdp", "flipkart"]
 
-                for plat in platforms_to_upload:
+                for idx, plat in enumerate(platforms_to_upload):
+                    if idx > 0:
+                        time.sleep(5) # Stagger browser initialization to prevent OOM
                     try:
                         from uploader.upload_manager import start_upload_job
                         jid = start_upload_job(
@@ -487,7 +491,7 @@ class BackgroundPublishingOrchestrator:
                 "-u", urgency,
                 title,
                 message
-            ], check=False)
+            ], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception:
             pass
 

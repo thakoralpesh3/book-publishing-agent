@@ -417,7 +417,7 @@ class DailyPublishScheduler:
                 "-u", urgency,
                 title,
                 message
-            ], check=False)
+            ], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except Exception:
             pass
 
