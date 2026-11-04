@@ -415,9 +415,10 @@ class DailyPublishScheduler:
                 "notify-send",
                 "-a", "PublisheR AI",
                 "-u", urgency,
+                "-t", "8000",
                 title,
                 message
-            ], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            ], check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
         except Exception:
             pass
 
