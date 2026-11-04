@@ -90,9 +90,9 @@ class GeminiBookEngine:
                     err_str = str(e)
                     last_error = e
 
-                    # Fast cascade and memoization on quota exhaustion
-                    if any(x in err_str for x in ["limit: 0", "limit:0", "quota exceeded", "RESOURCE_EXHAUSTED", "429"]):
-                        logger.info(f"Model {model_name} quota exhausted ({err_str[:80]}...). Bypassing for this session.")
+                    # Fast cascade and memoization on quota exhaustion or persistent gateway deadlines
+                    if any(x in err_str for x in ["limit: 0", "limit:0", "quota exceeded", "RESOURCE_EXHAUSTED", "429", "504", "DEADLINE_EXCEEDED"]):
+                        logger.info(f"Model {model_name} quota/deadline exhausted ({err_str[:80]}...). Bypassing for this session.")
                         _EXHAUSTED_MODELS.add(model_name)
                         break
 
@@ -102,7 +102,8 @@ class GeminiBookEngine:
                             logger.warning(f"Model {model_name} busy (503). Waiting {wait_s}s before retry {attempt+2}/3...")
                             time.sleep(wait_s)
                             continue
-                        logger.warning(f"Model {model_name} unavailable. Cascading to next fallback...")
+                        logger.warning(f"Model {model_name} unavailable after 3 attempts. Cascading to next fallback...")
+                        _EXHAUSTED_MODELS.add(model_name)
                         break
                     else:
                         logger.warning(f"Model {model_name} failed: {e}. Trying next model fallback...")
@@ -144,9 +145,9 @@ class GeminiBookEngine:
                     err_str = str(e)
                     last_error = e
 
-                    # Fast cascade and memoization on quota exhaustion
-                    if any(x in err_str for x in ["limit: 0", "limit:0", "quota exceeded", "RESOURCE_EXHAUSTED", "429"]):
-                        logger.info(f"Model {model_name} JSON quota exhausted ({err_str[:80]}...). Bypassing for this session.")
+                    # Fast cascade and memoization on quota exhaustion or persistent gateway deadlines
+                    if any(x in err_str for x in ["limit: 0", "limit:0", "quota exceeded", "RESOURCE_EXHAUSTED", "429", "504", "DEADLINE_EXCEEDED"]):
+                        logger.info(f"Model {model_name} JSON quota/deadline exhausted ({err_str[:80]}...). Bypassing for this session.")
                         _EXHAUSTED_MODELS.add(model_name)
                         break
 
@@ -155,6 +156,7 @@ class GeminiBookEngine:
                             wait_s = (attempt + 1) * 2
                             time.sleep(wait_s)
                             continue
+                        _EXHAUSTED_MODELS.add(model_name)
                         break
                     else:
                         logger.warning(f"Model {model_name} failed JSON gen: {e}. Trying next fallback...")
