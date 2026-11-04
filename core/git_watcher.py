@@ -76,6 +76,10 @@ if WATCHDOG_AVAILABLE:
             if event.is_directory:
                 return
 
+            # Strictly ignore non-mutation events like opened, closed, access
+            if event.event_type not in ("modified", "created", "deleted", "moved"):
+                return
+
             try:
                 rel = os.path.relpath(event.src_path, str(self.watcher.repo_dir))
                 if should_ignore_path(rel):
