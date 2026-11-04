@@ -13,6 +13,7 @@ import psutil
 import logging
 import datetime
 import subprocess
+import socket
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
 
@@ -34,6 +35,18 @@ DAILY_TRACKER_FILE = config.OUTPUT_DIR / "publisher_daily_tracker.json"
 YOUTUBE_AGENT_DIR = Path("/home/alpesh/youtube-agent")
 JARVIS_AGENT_DIR = Path("/home/alpesh/jarvis-agent")
 JARVIS_CONFIG_DIR = Path.home() / ".jarvis"
+
+
+def _wait_for_internet(max_wait_seconds: int = 45) -> bool:
+    """Verifies that network/DNS is active before launching API generation."""
+    start = time.time()
+    while time.time() - start < max_wait_seconds:
+        try:
+            with socket.create_connection(("8.8.8.8", 53), timeout=3):
+                return True
+        except OSError:
+            time.sleep(2)
+    return False
 
 
 class BackgroundPublishingOrchestrator:
