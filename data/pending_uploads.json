@@ -336,7 +336,7 @@
       "slug": "kids_drawing_book__step-by-step_cute_animals",
       "platform": "kdp",
       "title": "Kids Drawing Book: Step-by-Step Cute Animals",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -360,7 +360,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-05 20:47:50"
     },
     {
       "id": "pending_flipkart_kids_drawing_book__step-by-step_cute_animals_1793814944",
@@ -368,7 +369,7 @@
       "slug": "kids_drawing_book__step-by-step_cute_animals",
       "platform": "flipkart",
       "title": "Kids Drawing Book: Step-by-Step Cute Animals",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "Restored from disk storage on agent startup",
       "failure_reason": "Restored from disk storage on agent startup",
       "failure_stage": "upload",
@@ -392,7 +393,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "completed_at": "2026-11-05 20:47:37"
     }
   ]
 }
