@@ -264,6 +264,15 @@ class BackgroundPublishingOrchestrator:
         logger.info(f"📚 [PublisheR AI Background] Starting Autonomous Book Publishing Pipeline ({today_str})")
         logger.info("=" * 70)
 
+        safe_disk, free_mb = check_disk_safety(min_free_mb=200)
+        if not safe_disk:
+            logger.error(f"❌ [PublisheR AI] Insufficient disk space ({free_mb:.1f}MB free). Aborting run safely.")
+            return {
+                "status": "failed",
+                "error": f"Insufficient disk space ({free_mb:.1f}MB free, 200MB required)",
+                "date": today_str
+            }
+
         # Check and process any stored/pending uploads from prior sessions
         try:
             from uploader.pending_queue import pending_queue
