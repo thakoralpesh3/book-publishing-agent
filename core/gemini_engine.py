@@ -14,7 +14,8 @@ import config
 
 logger = logging.getLogger(__name__)
 
-_EXHAUSTED_MODELS = set()
+_EXHAUSTED_MODELS: Dict[str, float] = {}
+_ACTIVE_WORKING_MODEL: Optional[str] = None
 
 class GeminiBookEngine:
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
@@ -37,12 +38,23 @@ class GeminiBookEngine:
         return self._client
 
     def _get_candidate_models(self) -> List[str]:
-        """Returns ordered model candidate list filtering out models already exhausted in this session."""
+        """Returns ordered model candidate list, prioritizing proven active models and expiring exhausted ones after 1h."""
+        now = time.time()
+        expired = [m for m, ts in _EXHAUSTED_MODELS.items() if (now - ts) > 3600]
+        for m in expired:
+            _EXHAUSTED_MODELS.pop(m, None)
+
         all_models = [self.model] + [m for m in config.DEFAULT_MODELS if m != self.model]
         candidates = [m for m in all_models if m not in _EXHAUSTED_MODELS]
         if not candidates:
             _EXHAUSTED_MODELS.clear()
-            return all_models
+            candidates = list(all_models)
+
+        global _ACTIVE_WORKING_MODEL
+        if _ACTIVE_WORKING_MODEL and _ACTIVE_WORKING_MODEL in candidates and _ACTIVE_WORKING_MODEL != candidates[0]:
+            candidates.remove(_ACTIVE_WORKING_MODEL)
+            candidates.insert(0, _ACTIVE_WORKING_MODEL)
+
         return candidates
 
     def get_model_status(self) -> Dict[str, Any]:
