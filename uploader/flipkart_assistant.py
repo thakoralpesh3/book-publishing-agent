@@ -157,6 +157,13 @@ class FlipkartAssistant:
 
         log("Launching Chrome for Flipkart Seller Hub with persistent profile...", 10)
 
+        # Clear stale Singleton locks to prevent browser startup hangs on recovery
+        for lock_f in ["SingletonLock", "SingletonCookie", "SingletonSocket"]:
+            try:
+                (self.user_data_dir / lock_f).unlink(missing_ok=True)
+            except Exception:
+                pass
+
         with sync_playwright() as p:
             context = p.chromium.launch_persistent_context(
                 user_data_dir=str(self.user_data_dir),
