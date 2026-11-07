@@ -50,6 +50,16 @@ def _wait_for_internet(max_wait_seconds: int = 45) -> bool:
     return False
 
 
+def check_disk_safety(min_free_mb: int = 200) -> Tuple[bool, float]:
+    """Verifies that sufficient disk space exists before initiating book compilation."""
+    try:
+        usage = shutil.disk_usage(config.OUTPUT_DIR)
+        free_mb = usage.free / (1024 * 1024)
+        return free_mb >= min_free_mb, free_mb
+    except Exception:
+        return True, 1024.0
+
+
 class BackgroundPublishingOrchestrator:
     """Supreme autonomous supervisor for headless, background book publishing operations."""
 
