@@ -361,7 +361,7 @@
         "flipkart_excel",
         "amazon_md"
       ],
-      "completed_at": "2026-11-08 18:48:50"
+      "completed_at": "2026-11-08 18:49:22"
     },
     {
       "id": "pending_flipkart_kids_drawing_book__step-by-step_cute_animals_1793814944",
@@ -394,7 +394,7 @@
         "flipkart_excel",
         "amazon_md"
       ],
-      "completed_at": "2026-11-08 18:48:44"
+      "completed_at": "2026-11-08 18:49:37"
     },
     {
       "id": "pending_kdp_test_upload_book_1794143330",
@@ -407,8 +407,8 @@
       "failure_reason": "Book directory not found for slug 'test_upload_book': /home/alpesh/book-publishing-agent/output/test_upload_book",
       "failure_stage": "upload",
       "created_at": "2026-11-08 18:38:50",
-      "last_attempt": "2026-11-08 18:41:29",
-      "last_attempt_at": "2026-11-08 18:41:29",
+      "last_attempt": "2026-11-08 18:49:44",
+      "last_attempt_at": "2026-11-08 18:49:44",
       "retry_count": 1,
       "attempts": 1,
       "max_retries": 5,
