@@ -105,7 +105,7 @@ class GeminiBookEngine:
                     # Fast cascade and memoization on quota exhaustion or persistent gateway deadlines
                     if any(x in err_str for x in ["limit: 0", "limit:0", "quota exceeded", "RESOURCE_EXHAUSTED", "429", "504", "DEADLINE_EXCEEDED"]):
                         logger.info(f"Model {model_name} quota/deadline exhausted ({err_str[:80]}...). Bypassing for this session.")
-                        _EXHAUSTED_MODELS.add(model_name)
+                        _EXHAUSTED_MODELS[model_name] = time.time()
                         break
 
                     if "503" in err_str or "high demand" in err_str or "UNAVAILABLE" in err_str:
@@ -115,7 +115,7 @@ class GeminiBookEngine:
                             time.sleep(wait_s)
                             continue
                         logger.warning(f"Model {model_name} unavailable after 3 attempts. Cascading to next fallback...")
-                        _EXHAUSTED_MODELS.add(model_name)
+                        _EXHAUSTED_MODELS[model_name] = time.time()
                         break
                     else:
                         logger.warning(f"Model {model_name} failed: {e}. Trying next model fallback...")
