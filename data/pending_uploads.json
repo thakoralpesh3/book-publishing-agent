@@ -336,7 +336,7 @@
       "slug": "kids_drawing_book__step-by-step_cute_animals",
       "platform": "kdp",
       "title": "kids_drawing_book__step-by-step_cute_animals",
-      "status": "in_progress",
+      "status": "completed",
       "error_reason": "[Errno 2] No such file or directory: '/home/alpesh/book-publishing-agent/data/pending_uploads.tmp' -> '/home/alpesh/book-publishing-agent/data/pending_uploads.json'",
       "failure_reason": "[Errno 2] No such file or directory: '/home/alpesh/book-publishing-agent/data/pending_uploads.tmp' -> '/home/alpesh/book-publishing-agent/data/pending_uploads.json'",
       "failure_stage": "upload",
@@ -361,7 +361,7 @@
         "flipkart_excel",
         "amazon_md"
       ],
-      "completed_at": "2026-11-09 23:06:27"
+      "completed_at": "2026-11-11 10:56:27"
     },
     {
       "id": "pending_flipkart_kids_drawing_book__step-by-step_cute_animals_1793814944",
