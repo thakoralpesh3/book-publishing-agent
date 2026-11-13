@@ -296,34 +296,23 @@ class DailyPublishScheduler:
             try:
                 cfg = self.get_config()
                 if not cfg.get("enabled", True):
-                    time.sleep(15)
+                    time.sleep(30)
                     continue
 
-                now = datetime.datetime.now()
+                from core.background_orchestrator import BackgroundPublishingOrchestrator
+                orch = BackgroundPublishingOrchestrator()
                 interval_hours = float(cfg.get("interval_hours", self.default_interval_hours))
-                last_ts_str = cfg.get("last_run_timestamp", "")
 
-                is_interval_due = False
-                if not last_ts_str:
-                    is_interval_due = True
-                else:
-                    try:
-                        last_dt = datetime.datetime.strptime(last_ts_str, "%Y-%m-%d %H:%M:%S")
-                        elapsed_seconds = (now - last_dt).total_seconds()
-                        if elapsed_seconds >= (interval_hours * 3600.0):
-                            is_interval_due = True
-                    except Exception:
-                        pass
-
-                if is_interval_due:
-                    logger.info(f"🔔 [DailyPublishScheduler] 8-Hour interval reached! Launching autonomous generation & posting...")
+                # Check orchestrator tracker as the single source of truth for interval
+                if orch.is_run_due(min_interval_hours=interval_hours):
+                    logger.info(f"🔔 [DailyPublishScheduler] {interval_hours}-Hour interval reached! Launching autonomous generation & posting...")
                     self.execute_daily_pipeline()
 
             except Exception as e:
                 logger.error(f"Error in scheduler loop: {e}", exc_info=True)
 
-            # Sleep 15 seconds between checks
-            time.sleep(15)
+            # Sleep 60 seconds between checks to avoid busy-polling and log noise
+            time.sleep(60)
 
     def execute_daily_pipeline(self, force: bool = False) -> Dict[str, Any]:
         """
@@ -342,12 +331,6 @@ class DailyPublishScheduler:
         logger.info(f"🚀 [DailyPublishScheduler] Launching Autonomous Book Publishing Pipeline ({today_str})")
         logger.info(f"   Cycle: Every {interval_h} Hours | Auto-Post: {auto_upload.upper()} | Category: {category or 'Auto Trend'}")
         logger.info("=" * 70)
-
-        self._send_desktop_notification(
-            "⏰ PublisheR AI: Scheduled Pipeline Starting",
-            f"Autonomous book generation active (Every {interval_h}h). Posting to {auto_upload.upper()}.",
-            urgency="normal"
-        )
 
         try:
             from core.background_orchestrator import BackgroundPublishingOrchestrator
@@ -374,6 +357,14 @@ class DailyPublishScheduler:
                 )
             elif status_val == "skipped":
                 logger.info(f"✨ [DailyPublishScheduler] Run skipped: {res.get('message')}")
+                tracker_data = orchestrator.get_tracker_data()
+                if tracker_data.get("last_run_timestamp"):
+                    with self._lock:
+                        c = self.get_config()
+                        c["last_run_timestamp"] = tracker_data["last_run_timestamp"]
+                        c["last_run_date"] = tracker_data.get("last_run_date", today_str)
+                        c["last_run_status"] = "cooldown"
+                        self._save_config(c)
             else:
                 logger.warning(f"⚠️ [DailyPublishScheduler] Run completed with status: {status_val}")
 
