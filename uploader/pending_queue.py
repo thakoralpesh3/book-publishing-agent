@@ -6,7 +6,9 @@ Handles offline/failed content persistence, platform reachability checks, and au
 import os
 import json
 import time
+import uuid
 import logging
+import threading
 import urllib.request
 from pathlib import Path
 from typing import Dict, List, Optional, Any
