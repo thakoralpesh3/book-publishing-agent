@@ -557,18 +557,14 @@ class BackgroundPublishingOrchestrator:
             status = self.check_prerequisite_agents_status()
             logger.debug(f"Sentry poll: YT running={status['youtube']['running']}, Social running={status['social']['running']}, Done={status['prerequisites_finished']}")
 
-            # If prerequisites have finished and run is due:
+            # If prerequisites have finished:
             if status["prerequisites_finished"]:
-                if force or self.is_run_due(min_interval_hours=min_interval_hours):
-                    logger.info("🎯 Prerequisite agents have finished! Commencing PublisheR AI background pipeline...")
-                    return self.run_daily_publishing_pipeline(
-                        force=force,
-                        auto_upload=auto_upload,
-                        min_interval_hours=min_interval_hours
-                    )
-                else:
-                    logger.info("✨ Prerequisite agents finished, but 8-hour cooldown is active.")
-                    return {"status": "cooldown_active", "date": status["today"]}
+                logger.info("🎯 Prerequisite agents (YouTube & Social) have finished! Commencing PublisheR AI background pipeline...")
+                return self.run_daily_publishing_pipeline(
+                    force=force,
+                    auto_upload=auto_upload,
+                    min_interval_hours=min_interval_hours
+                )
 
             time.sleep(poll_interval_seconds)
 
