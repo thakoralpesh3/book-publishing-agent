@@ -33,6 +33,7 @@ class PendingUploadQueue:
     def __init__(self, queue_file: Optional[Path] = None, output_dir: Optional[Path] = None):
         self.queue_file = queue_file or QUEUE_FILE
         self.output_dir = output_dir or config.OUTPUT_DIR
+        self._lock = threading.Lock()
         self._ensure_queue_file()
 
     def _ensure_queue_file(self):
@@ -44,19 +45,28 @@ class PendingUploadQueue:
 
     def _load_data(self) -> Dict[str, Any]:
         """Loads data from the JSON file safely."""
-        try:
-            with open(self.queue_file, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            logger.warning(f"Error loading pending uploads file: {e}. Reinitializing.")
-            return {"queue": []}
+        with self._lock:
+            try:
+                with open(self.queue_file, "r", encoding="utf-8") as f:
+                    return json.load(f)
+            except Exception as e:
+                logger.warning(f"Error loading pending uploads file: {e}. Reinitializing.")
+                return {"queue": []}
 
     def _save_data(self, data: Dict[str, Any]):
-        """Saves data to JSON file atomically."""
-        temp_file = self.queue_file.with_suffix(".tmp")
-        with open(temp_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-        temp_file.replace(self.queue_file)
+        """Saves data to JSON file atomically and thread-safely."""
+        with self._lock:
+            temp_file = self.queue_file.with_name(f"pending_{uuid.uuid4().hex[:8]}.tmp")
+            try:
+                with open(temp_file, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+                temp_file.replace(self.queue_file)
+            except Exception as e:
+                try:
+                    temp_file.unlink(missing_ok=True)
+                except Exception:
+                    pass
+                raise e
 
     def add_or_update(
         self,
