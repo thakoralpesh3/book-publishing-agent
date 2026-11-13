@@ -21,7 +21,7 @@ import config
 logger = logging.getLogger("DailyScheduler")
 
 SCHEDULE_CONFIG_FILE = config.DATA_DIR / "daily_schedule_config.json"
-DEFAULT_INTERVAL_HOURS = 8.0
+DEFAULT_INTERVAL_HOURS = 0.0  # 0.0 = recurring interval disabled (runs once per system startup)
 DEFAULT_SCHEDULE_TIME = "23:30"  # 11:30 PM local time (IST)
 
 
@@ -125,8 +125,8 @@ class DailyPublishScheduler:
             if enabled is not None:
                 cfg["enabled"] = bool(enabled)
             if interval_hours is not None:
-                if interval_hours <= 0 or interval_hours > 72:
-                    raise ValueError(f"Invalid interval_hours '{interval_hours}'. Must be between 0.5 and 72 hours.")
+                if interval_hours < 0 or interval_hours > 72:
+                    raise ValueError(f"Invalid interval_hours '{interval_hours}'. Must be between 0 and 72 hours.")
                 cfg["interval_hours"] = float(interval_hours)
             if scheduled_time is not None:
                 try:
