@@ -313,6 +313,11 @@ class DailyPublishScheduler:
                 orch = BackgroundPublishingOrchestrator()
                 interval_hours = float(cfg.get("interval_hours", self.default_interval_hours))
 
+                # If interval is 0 or less, recurring periodic loop is disabled
+                if interval_hours <= 0:
+                    time.sleep(60)
+                    continue
+
                 # Check orchestrator tracker as the single source of truth for interval
                 if orch.is_run_due(min_interval_hours=interval_hours):
                     logger.info(f"🔔 [DailyPublishScheduler] {interval_hours}-Hour interval reached! Launching autonomous generation & posting...")
