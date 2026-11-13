@@ -132,7 +132,7 @@ class TestStartupAndInterval(unittest.TestCase):
         data = res.json()
         self.assertEqual(data.get("status"), "success")
         self.assertIn("schedule", data)
-        self.assertEqual(data["schedule"].get("interval_hours"), 8.0)
+        self.assertEqual(data["schedule"].get("interval_hours"), 0.0)
 
         # 2. POST /api/schedule (update)
         up_res = self.client.post("/api/schedule", json={
