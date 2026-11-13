@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "interval_hours": 0.0,
+  "interval_hours": 8.0,
   "scheduled_time": "23:30",
   "auto_upload": "both",
   "category": null,
@@ -13,5 +13,5 @@
   "last_book_slug": "kids_drawing_book__step-by-step_cute_animals",
   "timezone": "Asia/Kolkata (IST)",
   "created_at": "2026-11-01 18:56:12",
-  "updated_at": "2026-11-13 13:53:11"
+  "updated_at": "2026-11-13 14:31:27"
 }
