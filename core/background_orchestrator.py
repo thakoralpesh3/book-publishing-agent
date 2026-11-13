@@ -253,10 +253,22 @@ class BackgroundPublishingOrchestrator:
                     remaining_mins = int(remaining_secs // 60)
                 except Exception:
                     pass
-            logger.info(f"✨ [PublisheR AI Background] 8-Hour interval cooldown active ({remaining_mins} mins remaining). Skipping (use force=True to override).")
+            logger.info(f"✨ [PublisheR AI Background] 8-Hour interval cooldown active ({remaining_mins} mins remaining).")
+
+            # Even if generating a new book is on cooldown, check and dispatch any pending uploads!
+            dispatched_count = 0
+            try:
+                from uploader.pending_queue import pending_queue
+                pq_res = pending_queue.process_pending_queue(force=True)
+                dispatched_count = pq_res.get("dispatched_count", 0)
+                if dispatched_count > 0:
+                    logger.info(f"🚀 Dispatched {dispatched_count} pending book upload(s) during cooldown check.")
+            except Exception as pq_err:
+                logger.debug(f"Pending queue cooldown check notice: {pq_err}")
+
             return {
-                "status": "skipped",
-                "message": f"Daily book limit reached or 8-hour interval cooldown active ({remaining_mins} mins remaining)",
+                "status": "completed" if dispatched_count > 0 else "skipped",
+                "message": f"Daily book limit reached or 8-hour interval cooldown active ({remaining_mins} mins remaining)" + (f" (Dispatched {dispatched_count} upload(s))" if dispatched_count > 0 else ""),
                 "date": today_str
             }
 
