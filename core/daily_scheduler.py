@@ -157,6 +157,16 @@ class DailyPublishScheduler:
         """
         cfg = self.get_config()
         interval_hours = float(cfg.get("interval_hours", self.default_interval_hours))
+        if interval_hours <= 0:
+            return {
+                "target_run_iso": "N/A (Startup-Only)",
+                "target_time_display": "On Startup / Once Daily",
+                "countdown_seconds": 0,
+                "countdown_human": "Active on Startup",
+                "is_due": False,
+                "interval_hours": 0.0
+            }
+
         last_ts_str = cfg.get("last_run_timestamp", "")
         now = datetime.datetime.now()
 
