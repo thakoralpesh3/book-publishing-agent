@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "interval_hours": 8.0,
+  "interval_hours": 0.0,
   "scheduled_time": "23:30",
   "auto_upload": "both",
   "category": null,
