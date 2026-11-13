@@ -93,19 +93,17 @@ class BackgroundPublishingOrchestrator:
             logger.warning(f"Error reading tracker file: {e}")
             return {"runs_today_count": 0, "last_run_date": ""}
 
-    def is_run_due(self, min_interval_hours: float = 8.0) -> bool:
+    def is_run_due(self, min_interval_hours: float = 0.0) -> bool:
         """
-        Checks if publication pipeline is due based on the 8-hour interval rule and daily quota.
-        Returns True if:
-        1. No previous run has ever occurred, OR
-        2. Elapsed time since last run timestamp >= min_interval_hours (8 hours).
+        Checks if publication pipeline is due based on daily quota and interval rule.
+        If min_interval_hours <= 0, interval-based recurring runs are disabled (runs once per day).
         """
         data = self.get_tracker_data()
         today_str = datetime.date.today().strftime("%Y-%m-%d")
         last_ts_str = data.get("last_run_timestamp", "")
 
-        # If a timestamp is present, check 8-hour elapsed time
-        if last_ts_str:
+        # If recurring interval is active (> 0) and last run exists, check elapsed hours
+        if min_interval_hours > 0 and last_ts_str:
             try:
                 last_dt = datetime.datetime.strptime(last_ts_str, "%Y-%m-%d %H:%M:%S")
                 now = datetime.datetime.now()
@@ -114,15 +112,15 @@ class BackgroundPublishingOrchestrator:
             except Exception:
                 pass
 
-        # If no timestamp or parse failed, check daily limit quota
+        # If no interval or interval disabled, check daily limit quota
         if data.get("last_run_date") == today_str and data.get("runs_today_count", 0) >= data.get("daily_limit", 1):
             return False
 
         return True
 
     def is_daily_run_due(self) -> bool:
-        """Checks if book generation is due (checks 8-hour interval and quota)."""
-        return self.is_run_due(min_interval_hours=8.0)
+        """Checks if book generation is due for the day."""
+        return self.is_run_due(min_interval_hours=0.0)
 
     def check_prerequisite_agents_status(self) -> Dict[str, Any]:
         """
