@@ -395,6 +395,32 @@
         "amazon_md"
       ],
       "completed_at": "2026-11-11 22:22:38"
+    },
+    {
+      "id": "pending_kdp_test_upload_book_1794940192",
+      "queue_id": "pending_kdp_test_upload_book_1794940192",
+      "slug": "test_upload_book",
+      "platform": "kdp",
+      "title": "test_upload_book",
+      "status": "pending",
+      "error_reason": "listing_metadata.json not found in /tmp/tmpnh6bo482/test_upload_book",
+      "failure_reason": "listing_metadata.json not found in /tmp/tmpnh6bo482/test_upload_book",
+      "failure_stage": "upload",
+      "created_at": "2026-11-17 23:59:52",
+      "last_attempt": "2026-11-17 23:59:52",
+      "last_attempt_at": "2026-11-17 23:59:52",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1794940252.756673,
+      "artifacts": {
+        "interior_pdf": false,
+        "cover_pdf": false,
+        "cover_front_jpg": false,
+        "flipkart_excel": false,
+        "amazon_md": false
+      },
+      "saved_files": []
     }
   ]
 }
