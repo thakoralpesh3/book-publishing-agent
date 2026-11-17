@@ -254,8 +254,10 @@ class KDPAssistant:
             if keywords:
                 log(f"✓ Populated all {len(keywords)} Amazon Backend Keywords.")
 
+            return True
         except Exception as e:
             log(f"Note on details pre-fill: {e}")
+            return False
 
     def _fill_step2_content(
         self,
