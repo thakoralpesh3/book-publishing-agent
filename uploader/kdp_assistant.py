@@ -179,14 +179,17 @@ class KDPAssistant:
             "log": status_log
         }
 
-    def _fill_step1_details(self, page: Page, amz: Dict[str, Any], log: Callable):
-        """Fills title, subtitle, author, description, rights, and keywords."""
+    def _fill_step1_details(self, page: Page, amz: Dict[str, Any], log: Callable) -> bool:
+        """Fills title, subtitle, author, description, rights, and keywords. Returns True if title was populated."""
         try:
             # Title
             title_input = page.locator("input[name*='title'], #data-print-book-title, #data-book-title")
-            if title_input.count() > 0:
-                title_input.first.fill(amz.get("title", ""))
-                log(f"✓ Filled Title: {amz.get('title')}")
+            if title_input.count() == 0 or not title_input.first.is_visible():
+                log("⚠️ Title input field not found or not visible on current page.")
+                return False
+
+            title_input.first.fill(amz.get("title", ""))
+            log(f"✓ Filled Title: {amz.get('title')}")
 
             # Subtitle
             subtitle_input = page.locator("input[name*='subtitle'], #data-print-book-subtitle, #data-book-subtitle")
