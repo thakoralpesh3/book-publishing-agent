@@ -402,13 +402,13 @@
       "slug": "test_upload_book",
       "platform": "kdp",
       "title": "test_upload_book",
-      "status": "pending",
+      "status": "completed",
       "error_reason": "Book directory not found for slug 'test_upload_book': /home/alpesh/book-publishing-agent/output/test_upload_book",
       "failure_reason": "Book directory not found for slug 'test_upload_book': /home/alpesh/book-publishing-agent/output/test_upload_book",
       "failure_stage": "upload",
       "created_at": "2026-11-17 23:59:52",
-      "last_attempt": "2026-11-18 00:01:57",
-      "last_attempt_at": "2026-11-18 00:01:57",
+      "last_attempt": "2026-11-18 00:02:25",
+      "last_attempt_at": "2026-11-18 00:02:25",
       "retry_count": 1,
       "attempts": 1,
       "max_retries": 5,
@@ -420,7 +420,8 @@
         "flipkart_excel": false,
         "amazon_md": false
       },
-      "saved_files": []
+      "saved_files": [],
+      "completed_at": "2026-11-18 00:02:25"
     }
   ]
 }
