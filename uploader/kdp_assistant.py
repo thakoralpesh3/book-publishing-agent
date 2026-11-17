@@ -97,13 +97,13 @@ class KDPAssistant:
 
                 log(f"Preparing {book_type.title()} setup for: '{amz.get('title')}'...", 40)
 
-                # If on bookshelf, click "Create"
+                # If on bookshelf, navigate to create page or click "Create"
                 if "bookshelf" in page.url:
-                    create_btn = page.locator("a:has-text('Create'), button:has-text('Create'), #create-title-btn")
+                    create_btn = page.locator("a:has-text('Create'), button:has-text('Create'), #create-title-btn, a[href*='createnew/create']")
                     if create_btn.count() > 0:
                         try:
                             create_btn.first.click()
-                            time.sleep(2)
+                            time.sleep(3)
                             target_choice = "Create paperback" if book_type == "paperback" else "Create eBook"
                             choice_btn = page.locator(f"button:has-text('{target_choice}'), a:has-text('{target_choice}')")
                             if choice_btn.count() > 0:
@@ -112,12 +112,21 @@ class KDPAssistant:
                         except Exception as e:
                             log(f"Could not auto-click Create button: {e}")
 
-                # Step 1: Pre-fill Book Details (Title, Subtitle, Author, HTML Description, Keywords)
-                log("Injecting Step 1 (Paperback Details, Metadata & 7 Keywords)...", 50)
-                self._fill_step1_details(page, amz, log)
+                # Check if Amazon redirected to login
+                if any(x in page.url for x in ["signin", "ap/signin", "openid"]):
+                    session_error = "login_required: Amazon KDP sign-in is required to access title setup. Run 'python3 uploader/login_seller_portals.py kdp' to sign into your account."
+                    log(f"🔑 {session_error}", 30)
+
+                if not session_error:
+                    # Step 1: Pre-fill Book Details (Title, Subtitle, Author, HTML Description, Keywords)
+                    log("Injecting Step 1 (Paperback Details, Metadata & 7 Keywords)...", 50)
+                    filled_ok = self._fill_step1_details(page, amz, log)
+                    if not filled_ok:
+                        session_error = "form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'."
+                        log(f"⚠️ {session_error}", 50)
 
                 # Advance to Step 2 if auto_advance is True and Save and Continue button is visible
-                if auto_advance:
+                if not session_error and auto_advance:
                     save_btn = page.locator("#save-and-continue-button, button:has-text('Save and Continue'), input[value*='Save and Continue']")
                     if save_btn.count() > 0 and save_btn.first.is_visible():
                         log("Auto-advancing to Step 2 (Paperback Content)...", 65)
@@ -129,16 +138,17 @@ class KDPAssistant:
                         except Exception as e:
                             log(f"Auto-advance step 2 note: {e}")
 
-                log("✅ Amazon KDP wizard populated! Interior & Cover PDFs prepared.", 95)
-                log(f"Session will remain active for inspection ({keep_open_seconds}s or until closed).", 100)
+                if not session_error:
+                    log("✅ Amazon KDP wizard populated! Interior & Cover PDFs prepared.", 95)
+                    log(f"Session will remain active for inspection ({keep_open_seconds}s or until closed).", 100)
 
-                # Keep session active so user can review and finish
-                start_wait = time.time()
-                while time.time() - start_wait < keep_open_seconds:
-                    if page.is_closed():
-                        log("Browser window was closed by user.")
-                        break
-                    time.sleep(2)
+                    # Keep session active so user can review and finish
+                    start_wait = time.time()
+                    while time.time() - start_wait < keep_open_seconds:
+                        if page.is_closed():
+                            log("Browser window was closed by user.")
+                            break
+                        time.sleep(2)
             except Exception as e:
                 session_error = str(e)
                 log(f"KDP Assistant session exception: {e}")
