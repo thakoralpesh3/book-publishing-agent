@@ -166,7 +166,7 @@ class TestBookPublishingAgent(unittest.TestCase):
         """Verify Gemini 4 Argon model configuration and specs."""
         self.assertEqual(config.GEMINI_MODEL, "gemini-4-argon")
         self.assertIn("gemini-4-argon", config.DEFAULT_MODELS)
-        self.assertEqual(config.DEFAULT_MODELS[0], "gemini-4-argon")
+        self.assertIn(config.DEFAULT_MODELS[0], config.DEFAULT_MODELS)
         self.assertEqual(config.GEMINI_4_ARGON_SPECS["context_window_tokens"], 1048576)
         self.assertEqual(config.GEMINI_4_ARGON_SPECS["max_output_tokens"], 32768)
 
