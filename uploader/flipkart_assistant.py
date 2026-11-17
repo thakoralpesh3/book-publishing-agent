@@ -182,47 +182,53 @@ class FlipkartAssistant:
 
                 time.sleep(2)
 
-                # Check if seller is already logged in or needs login
-                if "login" in page.url or page.locator("input[type='text'], input[name*='email'], input[name*='mobile']").count() > 0:
-                    log("Please enter your Flipkart Seller phone/email in the browser window...", 30)
+                # Check if seller is logged in
+                is_logged_in = "dashboard" in page.url or ("seller" in page.url and "sell-online" not in page.url and "login" not in page.url)
+                if not is_logged_in:
+                    log("Action Required: Please complete Flipkart Seller Hub login in browser...", 30)
                     try:
-                        page.wait_for_url(lambda u: "dashboard" in u or "seller" in u, timeout=120000)
+                        page.wait_for_url(lambda u: "dashboard" in u or "my-listings" in u, timeout=120000)
                         log("✅ Flipkart Seller login confirmed!", 45)
+                        is_logged_in = True
                     except Exception:
-                        log("Proceeding with session...", 45)
+                        pass
 
-                time.sleep(2)
-
-                log("Navigating towards Bulk Listings Catalog Ingestion...", 60)
-                # Attempt to navigate to bulk listing if logged in
-                if "dashboard" in page.url:
+                if not is_logged_in:
+                    session_error = "login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in."
+                    log(f"🔑 {session_error}", 30)
+                else:
+                    log("Navigating towards Bulk Listings Catalog Ingestion...", 60)
                     try:
                         page.goto("https://seller.flipkart.com/index.html#dashboard/my-listings/bulk-listings", timeout=30000)
                         time.sleep(3)
                     except Exception:
                         pass
 
-                # If bulk catalog file input is found, attach flipkart_bulk_catalog.xlsx
-                if excel_path.exists():
-                    bulk_file_input = page.locator("input[type='file'][accept*='xls'], input[type='file']")
-                    if bulk_file_input.count() > 0:
-                        try:
-                            bulk_file_input.first.set_input_files(str(excel_path.resolve()))
-                            log(f"📊 Attached Bulk Catalog: {excel_path.name}!", 80)
-                        except Exception as e:
-                            log(f"Bulk file attach notice: {e}")
-                    else:
-                        log(f"📁 Ready-to-upload Flipkart spreadsheet: {excel_path.resolve()}", 85)
+                    file_attached = False
+                    if excel_path.exists():
+                        bulk_file_input = page.locator("input[type='file'][accept*='xls'], input[type='file']")
+                        if bulk_file_input.count() > 0:
+                            try:
+                                bulk_file_input.first.set_input_files(str(excel_path.resolve()))
+                                log(f"📊 Attached Bulk Catalog: {excel_path.name}!", 80)
+                                file_attached = True
+                            except Exception as e:
+                                log(f"Bulk file attach notice: {e}")
 
-                log("✅ Flipkart Seller Hub session ready. Complete your listing upload.", 95)
-                log(f"Session will remain open for {keep_open_seconds}s or until closed.", 100)
+                    if not file_attached:
+                        session_error = "catalog_input_not_found: Bulk listing file upload input was not found on page. Please ensure you have an active seller listing session."
+                        log(f"⚠️ {session_error}", 85)
 
-                start_wait = time.time()
-                while time.time() - start_wait < keep_open_seconds:
-                    if page.is_closed():
-                        log("Browser window was closed by user.")
-                        break
-                    time.sleep(2)
+                if not session_error:
+                    log("✅ Flipkart Seller Hub session ready. Complete your listing upload.", 95)
+                    log(f"Session will remain open for {keep_open_seconds}s or until closed.", 100)
+
+                    start_wait = time.time()
+                    while time.time() - start_wait < keep_open_seconds:
+                        if page.is_closed():
+                            log("Browser window was closed by user.")
+                            break
+                        time.sleep(2)
             except Exception as e:
                 session_error = str(e)
                 log(f"Flipkart Assistant session notice: {e}")
