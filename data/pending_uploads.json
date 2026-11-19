@@ -420,6 +420,38 @@
       },
       "saved_files": [],
       "completed_at": "2026-11-18 00:02:25"
+    },
+    {
+      "id": "pending_kdp_kids_drawing_book__how_to_draw_cute_animals__easy__1795108955",
+      "queue_id": "pending_kdp_kids_drawing_book__how_to_draw_cute_animals__easy__1795108955",
+      "slug": "kids_drawing_book__how_to_draw_cute_animals__easy_",
+      "platform": "kdp",
+      "title": "kids_drawing_book__how_to_draw_cute_animals__easy_",
+      "status": "pending",
+      "error_reason": "Amazon KDP upload interrupted: form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'.",
+      "failure_reason": "Amazon KDP upload interrupted: form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'.",
+      "failure_stage": "upload",
+      "created_at": "2026-11-19 22:52:35",
+      "last_attempt": "2026-11-19 22:52:35",
+      "last_attempt_at": "2026-11-19 22:52:35",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1795109015.8337746,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
     }
   ]
 }
