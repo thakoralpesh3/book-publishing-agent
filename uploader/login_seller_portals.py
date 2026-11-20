@@ -29,15 +29,21 @@ def open_session(platform: str):
             pass
 
     print(f"🚀 Opening {platform.upper()} browser session: {url}")
-    print("👉 Log into your seller account and complete 2FA/OTP.")
-    print("👉 When logged in, close the browser window. Session cookies are automatically saved.")
+    if key in ["kdp", "amazon"]:
+        print("👉 Complete Amazon Sign-In/2FA and password verification.")
+        print("👉 Make sure you check 'Keep me signed in' if prompted.")
+        print("👉 Once the 'Paperback Details' title setup page loads, close the browser window.")
+    else:
+        print("👉 Click 'Login' at the top right and sign into your Flipkart Seller account.")
+        print("👉 Once your Seller Hub Dashboard loads, close the browser window.")
+    print("👉 Session cookies are automatically preserved for background automated publishing.")
 
     with sync_playwright() as p:
         context = p.chromium.launch_persistent_context(
             user_data_dir=str(profile_dir),
             headless=False,
             viewport={"width": 1280, "height": 800},
-            args=["--no-sandbox"]
+            args=["--no-sandbox", "--disable-gpu", "--disable-dev-shm-usage"]
         )
         page = context.new_page()
         try:
