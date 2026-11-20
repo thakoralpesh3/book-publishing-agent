@@ -53,8 +53,11 @@ def start_upload_job(
     UPLOAD_JOBS[job_id] = job
 
     def _worker():
-        logger.info(f"Starting background upload worker for job {job_id} ({platform.upper()})...")
-        def _cb(msg: str, pct: int):
+        plat_key = "kdp" if platform.lower() in ["kdp", "amazon"] else platform.lower()
+        lock = _PLATFORM_LOCKS.get(plat_key, _PLATFORM_LOCKS["kdp"])
+        with lock:
+            logger.info(f"Starting background upload worker for job {job_id} ({platform.upper()})...")
+            def _cb(msg: str, pct: int):
             job["logs"].append({"time": time.strftime("%H:%M:%S"), "message": msg})
             job["current_step"] = msg
             if pct >= 0:
