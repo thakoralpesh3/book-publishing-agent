@@ -8,8 +8,8 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 PROFILES = {
-    "kdp": (Path.home() / ".cache" / "pub_agent_kdp_profile", "https://kdp.amazon.com/bookshelf"),
-    "amazon": (Path.home() / ".cache" / "pub_agent_kdp_profile", "https://kdp.amazon.com/bookshelf"),
+    "kdp": (Path.home() / ".cache" / "pub_agent_kdp_profile", "https://kdp.amazon.com/en_US/title-setup/paperback/new/details"),
+    "amazon": (Path.home() / ".cache" / "pub_agent_kdp_profile", "https://kdp.amazon.com/en_US/title-setup/paperback/new/details"),
     "flipkart": (Path.home() / ".cache" / "pub_agent_flipkart_profile", "https://seller.flipkart.com"),
 }
 
