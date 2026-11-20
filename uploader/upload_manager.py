@@ -17,6 +17,11 @@ from uploader.flipkart_assistant import FlipkartAssistant
 logger = logging.getLogger("UploadManager")
 
 UPLOAD_JOBS: Dict[str, Dict[str, Any]] = {}
+_PLATFORM_LOCKS = {
+    "kdp": threading.Lock(),
+    "amazon": threading.Lock(),
+    "flipkart": threading.Lock()
+}
 
 def start_upload_job(
     slug: str,
