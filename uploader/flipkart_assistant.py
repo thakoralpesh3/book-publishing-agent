@@ -169,7 +169,7 @@ class FlipkartAssistant:
                 user_data_dir=str(self.user_data_dir),
                 headless=effective_headless,
                 viewport={"width": 1366, "height": 900},
-                args=["--start-maximized", "--no-sandbox"]
+                args=["--start-maximized", "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer", "--disable-dev-shm-usage"]
             )
             page = context.new_page()
             session_error = None
