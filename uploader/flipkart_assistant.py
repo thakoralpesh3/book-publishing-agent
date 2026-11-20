@@ -182,8 +182,9 @@ class FlipkartAssistant:
 
                 time.sleep(2)
 
-                # Check if seller is logged in
-                is_logged_in = "dashboard" in page.url or ("seller" in page.url and "sell-online" not in page.url and "login" not in page.url)
+                # Check if seller is logged in (dashboard presence and absence of guest marketing/login triggers)
+                has_login_btn = page.locator("button:has-text('Login'), a:has-text('Login')").count() > 0
+                is_logged_in = ("dashboard" in page.url or "my-listings" in page.url) and not has_login_btn and "Sell Online" not in page.title()
                 if not is_logged_in:
                     log("Action Required: Please complete Flipkart Seller Hub login in browser...", 30)
                     try:
