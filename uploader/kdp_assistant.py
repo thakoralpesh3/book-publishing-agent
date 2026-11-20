@@ -97,25 +97,40 @@ class KDPAssistant:
 
                 log(f"Preparing {book_type.title()} setup for: '{amz.get('title')}'...", 40)
 
-                # If on bookshelf, navigate to create page or click "Create"
-                if "bookshelf" in page.url:
-                    create_btn = page.locator("a:has-text('Create'), button:has-text('Create'), #create-title-btn, a[href*='createnew/create']")
-                    if create_btn.count() > 0:
-                        try:
-                            create_btn.first.click()
-                            time.sleep(3)
-                            target_choice = "Create paperback" if book_type == "paperback" else "Create eBook"
-                            choice_btn = page.locator(f"button:has-text('{target_choice}'), a:has-text('{target_choice}')")
-                            if choice_btn.count() > 0:
-                                choice_btn.first.click()
+                # If on bookshelf, navigate directly to Title Setup or click "Create"
+                if "title-setup" not in page.url:
+                    if "bookshelf" in page.url:
+                        create_btn = page.locator("a:has-text('Create'), button:has-text('Create'), #create-title-btn, a[href*='createnew/create']")
+                        if create_btn.count() > 0:
+                            try:
+                                create_btn.first.click()
                                 time.sleep(3)
-                        except Exception as e:
-                            log(f"Could not auto-click Create button: {e}")
+                                target_choice = "Create paperback" if book_type == "paperback" else "Create eBook"
+                                choice_btn = page.locator(f"button:has-text('{target_choice}'), a:has-text('{target_choice}')")
+                                if choice_btn.count() > 0:
+                                    choice_btn.first.click()
+                                    time.sleep(3)
+                            except Exception as e:
+                                log(f"Could not auto-click Create button: {e}")
+                    if "title-setup" not in page.url and not any(x in page.url for x in ["signin", "ap/signin", "openid"]):
+                        try:
+                            page.goto("https://kdp.amazon.com/en_US/title-setup/paperback/new/details", timeout=30000, wait_until="domcontentloaded")
+                            time.sleep(2)
+                        except Exception:
+                            pass
 
-                # Check if Amazon redirected to login
+                # Check if Amazon redirected to login / password verification
                 if any(x in page.url for x in ["signin", "ap/signin", "openid"]):
-                    session_error = "login_required: Amazon KDP sign-in is required to access title setup. Run 'python3 uploader/login_seller_portals.py kdp' to sign into your account."
-                    log(f"🔑 {session_error}", 30)
+                    if not effective_headless:
+                        log("Action Required: Please complete Amazon Sign-In / Password Verification in the browser window...", 25)
+                        try:
+                            page.wait_for_url(lambda u: "title-setup" in u or "bookshelf" in u, timeout=120000)
+                            log("✅ Sign-in confirmed! Proceeding with title setup...", 35)
+                        except Exception:
+                            pass
+                    if any(x in page.url for x in ["signin", "ap/signin", "openid"]):
+                        session_error = "login_required: Amazon KDP password/OTP verification is required for title setup. Please run 'python3 uploader/login_seller_portals.py kdp' to authenticate."
+                        log(f"🔑 {session_error}", 30)
 
                 if not session_error:
                     # Step 1: Pre-fill Book Details (Title, Subtitle, Author, HTML Description, Keywords)
