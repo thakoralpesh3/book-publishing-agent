@@ -644,6 +644,38 @@
         "flipkart_excel",
         "amazon_md"
       ]
+    },
+    {
+      "id": "pending_flipkart_how_to_draw_cute_animals__step-by-step_easy_drawin_1795331835",
+      "queue_id": "pending_flipkart_how_to_draw_cute_animals__step-by-step_easy_drawin_1795331835",
+      "slug": "how_to_draw_cute_animals__step-by-step_easy_drawin",
+      "platform": "flipkart",
+      "title": "how_to_draw_cute_animals__step-by-step_easy_drawin",
+      "status": "pending",
+      "error_reason": "Flipkart upload interrupted: login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in.",
+      "failure_reason": "Flipkart upload interrupted: login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in.",
+      "failure_stage": "upload",
+      "created_at": "2026-11-22 12:47:15",
+      "last_attempt": "2026-11-22 12:47:15",
+      "last_attempt_at": "2026-11-22 12:47:15",
+      "retry_count": 1,
+      "attempts": 1,
+      "max_retries": 5,
+      "next_retry_at": 1795331895.3395882,
+      "artifacts": {
+        "interior_pdf": true,
+        "cover_pdf": true,
+        "cover_front_jpg": true,
+        "flipkart_excel": true,
+        "amazon_md": true
+      },
+      "saved_files": [
+        "interior_pdf",
+        "cover_pdf",
+        "cover_front_jpg",
+        "flipkart_excel",
+        "amazon_md"
+      ]
     }
   ]
 }
