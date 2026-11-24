@@ -88,7 +88,11 @@ class BackgroundPublishingOrchestrator:
         """Reads tracker data safely."""
         self._ensure_tracker_file()
         try:
-            return json.loads(self.tracker_file.read_text(encoding="utf-8") or "{}")
+            data = json.loads(self.tracker_file.read_text(encoding="utf-8") or "{}")
+            today_str = datetime.date.today().strftime("%Y-%m-%d")
+            if data.get("last_run_date") != today_str:
+                data["runs_today_count"] = 0
+            return data
         except Exception as e:
             logger.warning(f"Error reading tracker file: {e}")
             return {"runs_today_count": 0, "last_run_date": ""}
@@ -491,8 +495,11 @@ class BackgroundPublishingOrchestrator:
         now_ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         data = self.get_tracker_data()
         data["current_date"] = today_str
+        if data.get("last_run_date") != today_str:
+            data["runs_today_count"] = 1
+        else:
+            data["runs_today_count"] = data.get("runs_today_count", 0) + 1
         data["last_run_date"] = today_str
-        data["runs_today_count"] = data.get("runs_today_count", 0) + 1
         data["last_run_timestamp"] = now_ts
         data["last_book_slug"] = book_data.get("slug", "")
         data["last_book_title"] = book_data.get("title", "")
