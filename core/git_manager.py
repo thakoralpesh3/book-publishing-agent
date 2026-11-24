@@ -246,6 +246,12 @@ class GitManager:
 
         push_res = self._run_git(["push", "-u", remote, cur_branch], timeout=60)
         if push_res.returncode != 0:
+            # Self-healing: try pulling with rebase once in case remote ref moved concurrently
+            pull_res = self._run_git(["pull", "--rebase", remote, cur_branch], timeout=60)
+            if pull_res.returncode == 0:
+                push_res = self._run_git(["push", "-u", remote, cur_branch], timeout=60)
+
+        if push_res.returncode != 0:
             return {
                 "success": False,
                 "error": f"Push failed: {push_res.stderr.strip()}",
