@@ -143,7 +143,7 @@ jobs:
           retention-days: 30
 
       - name: Publish GitHub Release with Downloadable Book Files
-        if: ${{ inputs.create_release != false }}
+        if: ${{ github.event_name == 'schedule' || inputs.create_release != false }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
