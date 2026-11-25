@@ -116,7 +116,8 @@ class TestStartupAndInterval(unittest.TestCase):
                 "publisher_daily_due": True
             }
 
-            res = self.orchestrator.watch_and_run(poll_interval_seconds=1, max_wait_seconds=5, force=True)
+            with patch("uploader.pending_queue.pending_queue.process_startup_stored_contents", return_value={"dispatched_count": 0}):
+                res = self.orchestrator.watch_and_run(poll_interval_seconds=1, max_wait_seconds=5, force=True)
             self.assertEqual(res.get("status"), "completed")
             self.assertEqual(res.get("title"), "Startup Book")
             mock_pipeline.assert_called_once()
