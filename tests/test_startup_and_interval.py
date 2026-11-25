@@ -153,6 +153,22 @@ class TestStartupAndInterval(unittest.TestCase):
             self.assertEqual(run_res.status_code, 200)
             self.assertEqual(run_res.json().get("status"), "queued")
 
+    @patch("core.background_orchestrator.BackgroundPublishingOrchestrator.run_daily_publishing_pipeline")
+    def test_07_failure_cooldown_and_overlap_guard(self, mock_pipe):
+        """Verify failed pipeline sets _last_failure_ts cooldown and prevents tight retry storms."""
+        mock_pipe.return_value = {"status": "failed", "error": "429 RESOURCE_EXHAUSTED"}
+        res = self.scheduler.execute_daily_pipeline(force=False)
+        self.assertEqual(res.get("status"), "failed")
+        self.assertGreater(self.scheduler._last_failure_ts, 0.0)
+
+        # Ensure overlapping lock rejects concurrent non-forced run
+        self.scheduler._pipeline_lock.acquire()
+        try:
+            overlap = self.scheduler.execute_daily_pipeline(force=False)
+            self.assertEqual(overlap.get("status"), "skipped")
+        finally:
+            self.scheduler._pipeline_lock.release()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -291,6 +291,18 @@ class TestPendingUploadQueue(unittest.TestCase):
                 pending_items = self.queue.list_items(status="pending")
                 self.assertTrue(any(it["slug"] == offline_slug for it in pending_items))
 
+    def test_10_recover_stale_in_progress_on_startup(self):
+        """Verify interrupted in_progress items recover back to pending on startup."""
+        entry = self.queue.add_or_update(slug=self.slug, platform="kdp", failure_reason="Old crash")
+        self.queue.mark_in_progress(entry["queue_id"])
+        self.assertEqual(len(self.queue.list_items(status="pending")), 0)
+
+        recovered = self.queue.recover_stale_in_progress(max_age_seconds=0)
+        self.assertEqual(recovered, 1)
+        pending = self.queue.list_items(status="pending")
+        self.assertEqual(len(pending), 1)
+        self.assertEqual(pending[0]["next_retry_at"], 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()
