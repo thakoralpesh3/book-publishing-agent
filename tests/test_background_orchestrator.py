@@ -51,8 +51,9 @@ class TestBackgroundOrchestrator(unittest.TestCase):
 
         self.assertFalse(self.orchestrator.is_daily_run_due())
 
-        # Attempt pipeline without force -> should be skipped
-        res = self.orchestrator.run_daily_publishing_pipeline(force=False)
+        # Attempt pipeline without force -> should be skipped cleanly (without triggering live queue)
+        with patch("uploader.pending_queue.pending_queue.process_pending_queue", return_value={"dispatched_count": 0}):
+            res = self.orchestrator.run_daily_publishing_pipeline(force=False)
         self.assertEqual(res.get("status"), "skipped")
         self.assertIn("Daily book limit reached", res.get("message", ""))
 
