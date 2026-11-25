@@ -121,8 +121,10 @@ class TestBackgroundOrchestrator(unittest.TestCase):
             "amazon_markdown": str(book_dir / "amazon.md")
         }
 
-        # Run pipeline
-        res = self.orchestrator.run_daily_publishing_pipeline(force=True, custom_topic="Mastering Autonomous Wealth")
+        # Run pipeline without touching live pending_uploads.json / browsers
+        with patch("uploader.pending_queue.pending_queue.process_startup_stored_contents", return_value={"dispatched_count": 0}):
+            with patch("uploader.pending_queue.pending_queue.process_pending_queue", return_value={"dispatched_count": 0}):
+                res = self.orchestrator.run_daily_publishing_pipeline(force=True, custom_topic="Mastering Autonomous Wealth")
         self.assertEqual(res.get("status"), "completed")
         self.assertEqual(res.get("book_slug"), slug)
 

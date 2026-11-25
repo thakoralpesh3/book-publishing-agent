@@ -149,11 +149,18 @@ class KDPAssistant:
                         log("Auto-advancing to Step 2 (Paperback Content)...", 65)
                         try:
                             save_btn.first.click()
-                            time.sleep(4)
+                            page.wait_for_load_state("domcontentloaded", timeout=15000)
+                            time.sleep(3)
                             # Fill Step 2 (Upload interior PDF and Cover PDF)
-                            self._fill_step2_content(page, amz, interior_pdf, cover_pdf, log)
+                            files_ok = self._fill_step2_content(page, amz, interior_pdf, cover_pdf, log)
+                            if not files_ok:
+                                session_error = "content_upload_not_ready: KDP Step 2 manuscript/cover PDF uploaders were not accessible (verify Step 1 Description, Categories & Publishing Rights)."
+                                log(f"⚠️ {session_error}", 85)
                         except Exception as e:
+                            session_error = f"step2_advance_failed: {e}"
                             log(f"Auto-advance step 2 note: {e}")
+                    else:
+                        session_error = "step1_save_not_found: Could not find 'Save and Continue' button after filling Step 1."
 
                 if not session_error:
                     log("✅ Amazon KDP wizard populated! Interior & Cover PDFs prepared.", 95)
@@ -232,10 +239,18 @@ class KDPAssistant:
                 last_input.first.fill(last_name)
                 log(f"✓ Filled Primary Author: {first_name} {last_name}")
 
-            # Description (Inject sanitized KDP HTML)
+            # Description (Inject sanitized KDP HTML into rich editor or visible textarea)
             desc_text = amz.get("html_description") or amz.get("plain_description", "")
-            desc_textarea = page.locator("textarea[name*='description'], #data-book-description")
-            if desc_textarea.count() > 0:
+            desc_rich = page.locator("div.ck-editor__editable[contenteditable='true'], [contenteditable='true'][aria-label*='Description' i]")
+            desc_textarea = page.locator("textarea#data-print-book-description:visible, textarea[name*='description']:visible, #data-book-description:visible")
+            if desc_rich.count() > 0 and desc_rich.first.is_visible():
+                try:
+                    desc_rich.first.click()
+                    desc_rich.first.fill(amz.get("plain_description") or re.sub(r"<[^>]+>", " ", desc_text))
+                    log(f"✓ Injected Description into KDP rich editor ({len(desc_text)} chars).")
+                except Exception:
+                    pass
+            elif desc_textarea.count() > 0:
                 desc_textarea.first.fill(desc_text)
                 log(f"✓ Injected KDP-compliant HTML Description ({len(desc_text)} chars).")
 
@@ -287,8 +302,10 @@ class KDPAssistant:
         interior_pdf: Path,
         cover_pdf: Path,
         log: Callable
-    ):
-        """Attempts to automate Step 2: Interior PDF & Cover PDF file uploads and print options."""
+    ) -> bool:
+        """Attempts to automate Step 2: Interior PDF & Cover PDF file uploads and print options. Returns True if files were attached."""
+        manuscript_attached = not interior_pdf.exists()
+        cover_attached = not cover_pdf.exists()
         try:
             log("Configuring Step 2 print options & file uploaders...", 70)
 
@@ -335,6 +352,7 @@ class KDPAssistant:
                 if manuscript_file_input.count() > 0:
                     try:
                         manuscript_file_input.first.set_input_files(str(interior_pdf.resolve()))
+                        manuscript_attached = True
                         log(f"📄 Uploading Manuscript Interior PDF: {interior_pdf.name}...", 80)
                     except Exception as e:
                         log(f"Could not set manuscript file: {e}")
@@ -356,11 +374,14 @@ class KDPAssistant:
                 if cover_file_input.count() > 0:
                     try:
                         cover_file_input.first.set_input_files(str(cover_pdf.resolve()))
+                        cover_attached = True
                         log(f"🎨 Uploading Full-Wrap Cover PDF: {cover_pdf.name}...", 90)
                     except Exception as e:
                         log(f"Could not set cover file: {e}")
                 else:
                     log(f"ℹ️ Full-wrap cover PDF ready on disk: {cover_pdf.resolve()}")
 
+            return manuscript_attached and cover_attached
         except Exception as e:
             log(f"Note on Step 2 content: {e}")
+            return False

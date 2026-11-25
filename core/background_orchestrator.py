@@ -412,7 +412,7 @@ class BackgroundPublishingOrchestrator:
                         jid = start_upload_job(
                             slug=book_data["slug"],
                             platform=plat,
-                            headless=True,
+                            headless=True if not os.environ.get("DISPLAY") else False,
                             auto_advance=True
                         )
                         upload_job_ids.append(jid)
