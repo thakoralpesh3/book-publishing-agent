@@ -287,6 +287,52 @@ class PendingUploadQueue:
         health = self.check_platform_health(platform=plat)
         return health.get(plat, False) or health.get("internet", False)
 
+    def recover_stale_in_progress(self, max_age_seconds: int = 1200) -> int:
+        """Resets interrupted 'in_progress' items (e.g. after reboot or timeout) back to 'pending'."""
+        from uploader.upload_manager import UPLOAD_JOBS
+        active_pairs = {
+            (j.get("slug"), "kdp" if j.get("platform", "").lower() in ["kdp", "amazon"] else j.get("platform", "").lower())
+            for j in UPLOAD_JOBS.values()
+            if j.get("status") == "running"
+        }
+
+        data = self._load_data()
+        queue = data.get("queue", [])
+        recovered = 0
+        now_epoch = time.time()
+
+        for item in queue:
+            if item.get("status") != "in_progress":
+                continue
+            plat = "kdp" if item.get("platform", "").lower() in ["kdp", "amazon"] else item.get("platform", "").lower()
+            if (item.get("slug"), plat) in active_pairs:
+                continue
+
+            is_stale = max_age_seconds <= 0
+            if not is_stale:
+                last_str = item.get("last_attempt") or item.get("last_attempt_at") or ""
+                if not last_str:
+                    is_stale = True
+                else:
+                    try:
+                        last_epoch = time.mktime(time.strptime(last_str, "%Y-%m-%d %H:%M:%S"))
+                        is_stale = (now_epoch - last_epoch) >= max_age_seconds
+                    except Exception:
+                        is_stale = True
+
+            if is_stale:
+                item["status"] = "pending"
+                item["next_retry_at"] = 0.0 if max_age_seconds <= 0 else now_epoch
+                if not item.get("error_reason"):
+                    item["error_reason"] = "Recovered from interrupted previous session"
+                recovered += 1
+
+        if recovered > 0:
+            data["queue"] = queue
+            self._save_data(data)
+            logger.info(f"♻️ Recovered {recovered} interrupted 'in_progress' upload item(s) back to 'pending'.")
+        return recovered
+
     def process_pending_queue(self, force: bool = False) -> Dict[str, Any]:
         """
         Scans all pending items in the queue, checks platform health,
@@ -294,6 +340,7 @@ class PendingUploadQueue:
         """
         from uploader.upload_manager import start_upload_job
 
+        self.recover_stale_in_progress(max_age_seconds=1200)
         pending_items = self.list_items(status="pending")
         if not pending_items:
             return {"status": "empty", "message": "No pending uploads in queue."}
@@ -413,6 +460,7 @@ class PendingUploadQueue:
            if platforms are reachable (bypassing retry cooldown delays with force=True).
         """
         logger.info("🔄 [Agent Startup] Checking for stored book contents from previous sessions...")
+        self.recover_stale_in_progress(max_age_seconds=0)
         self.sync_unregistered_books_from_disk()
 
         pending_items = self.list_items(status="pending")

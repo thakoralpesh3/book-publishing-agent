@@ -124,30 +124,34 @@ class TestStartupAndInterval(unittest.TestCase):
     @patch("core.daily_scheduler.DailyPublishScheduler.execute_daily_pipeline")
     def test_06_fastapi_schedule_endpoints(self, mock_exec):
         """Tests /api/schedule GET, POST, and run_now endpoints."""
+        import core.daily_scheduler as ds_mod
         mock_exec.return_value = {"status": "completed"}
 
-        # 1. GET /api/schedule
-        res = self.client.get("/api/schedule")
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
-        self.assertEqual(data.get("status"), "success")
-        self.assertIn("schedule", data)
-        self.assertIn("interval_hours", data["schedule"])
+        # Isolate global daily_scheduler from live data/daily_schedule_config.json
+        with patch.object(ds_mod.daily_scheduler, "config_file", self.sched_config_file):
+            ds_mod.daily_scheduler._ensure_config()
+            # 1. GET /api/schedule
+            res = self.client.get("/api/schedule")
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            self.assertEqual(data.get("status"), "success")
+            self.assertIn("schedule", data)
+            self.assertIn("interval_hours", data["schedule"])
 
-        # 2. POST /api/schedule (update)
-        up_res = self.client.post("/api/schedule", json={
-            "interval_hours": 8.0,
-            "scheduled_time": "23:30",
-            "auto_upload": "both",
-            "enabled": True
-        })
-        self.assertEqual(up_res.status_code, 200)
-        self.assertEqual(up_res.json()["schedule"]["interval_hours"], 8.0)
+            # 2. POST /api/schedule (update)
+            up_res = self.client.post("/api/schedule", json={
+                "interval_hours": 8.0,
+                "scheduled_time": "23:30",
+                "auto_upload": "both",
+                "enabled": True
+            })
+            self.assertEqual(up_res.status_code, 200)
+            self.assertEqual(up_res.json()["schedule"]["interval_hours"], 8.0)
 
-        # 3. POST /api/schedule/run_now
-        run_res = self.client.post("/api/schedule/run_now")
-        self.assertEqual(run_res.status_code, 200)
-        self.assertEqual(run_res.json().get("status"), "queued")
+            # 3. POST /api/schedule/run_now
+            run_res = self.client.post("/api/schedule/run_now")
+            self.assertEqual(run_res.status_code, 200)
+            self.assertEqual(run_res.json().get("status"), "queued")
 
 
 if __name__ == "__main__":

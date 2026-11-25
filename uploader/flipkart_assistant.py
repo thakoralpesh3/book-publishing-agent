@@ -180,11 +180,11 @@ class FlipkartAssistant:
                 except Exception as e:
                     log(f"Navigation notice: {e}")
 
-                time.sleep(2)
+                time.sleep(5)
 
                 # Check if seller is logged in (dashboard presence and absence of guest marketing/login triggers)
                 has_login_btn = page.locator("button:has-text('Login'), a:has-text('Login')").count() > 0
-                is_logged_in = ("dashboard" in page.url or "my-listings" in page.url) and not has_login_btn and "Sell Online" not in page.title()
+                is_logged_in = ("dashboard" in page.url or "my-listings" in page.url) and not has_login_btn and "Sell Online" not in page.title() and "Become an Online Seller" not in page.title()
                 if not is_logged_in:
                     log("Action Required: Please complete Flipkart Seller Hub login in browser...", 30)
                     try:
@@ -217,7 +217,10 @@ class FlipkartAssistant:
                                 log(f"Bulk file attach notice: {e}")
 
                     if not file_attached:
-                        session_error = "catalog_input_not_found: Bulk listing file upload input was not found on page. Please ensure you have an active seller listing session."
+                        if "sellerOnboarding" in page.url:
+                            session_error = "onboarding_incomplete: Flipkart Seller Hub account onboarding is still pending (#dashboard/sellerOnboarding). Complete seller verification on Flipkart before bulk catalog uploads can run."
+                        else:
+                            session_error = "catalog_input_not_found: Bulk listing file upload input was not found on page. Please ensure you have an active seller listing session."
                         log(f"⚠️ {session_error}", 85)
 
                 if not session_error:

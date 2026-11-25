@@ -71,7 +71,7 @@ class MobileGatewayWatchdog:
         try:
             url = f"http://127.0.0.1:{self.port}/api/health"
             req = urllib.request.Request(url, headers={"User-Agent": "PublisheRWatchdog/1.0"})
-            with urllib.request.urlopen(req, timeout=2.0) as resp:
+            with urllib.request.urlopen(req, timeout=4.0) as resp:
                 data = json.loads(resp.read().decode())
                 return data.get("status") in ["healthy", "ok", "HEALTHY"]
         except Exception:
@@ -79,6 +79,20 @@ class MobileGatewayWatchdog:
 
     def start_server(self) -> bool:
         """Launches main.py server if not already active and healthy."""
+        # Terminate any lingering previous child process before launching a replacement
+        if self.server_proc and self.server_proc.poll() is None:
+            if self.check_health():
+                return True
+            logger.warning(f"Terminating unresponsive backend child process (PID: {self.server_proc.pid})...")
+            try:
+                self.server_proc.terminate()
+                self.server_proc.wait(timeout=5)
+            except Exception:
+                try:
+                    self.server_proc.kill()
+                except Exception:
+                    pass
+
         if is_port_in_use(self.port):
             logger.info(f"Port {self.port} is already in use. Verifying health...")
             if self.check_health():
@@ -91,10 +105,13 @@ class MobileGatewayWatchdog:
 
         logger.info(f"Starting PublisheR AI backend on port {self.port}...")
         log_out = open(DATA_DIR / "server.log", "a", encoding="utf-8")
-        
+        child_env = os.environ.copy()
+        child_env["PUBLISHER_SUPERVISED"] = "1"
+
         self.server_proc = subprocess.Popen(
             [sys.executable, str(BASE_DIR / "main.py"), "serve", "--port", str(self.port), "--no-browser"],
             cwd=str(BASE_DIR),
+            env=child_env,
             stdout=log_out,
             stderr=log_out,
             start_new_session=True
@@ -282,26 +299,22 @@ class MobileGatewayWatchdog:
         except Exception as ds_e:
             logger.warning(f"Could not initialize DailyPublishScheduler: {ds_e}")
 
-        # Check and auto-upload any stored contents on startup
-        try:
-            from uploader.pending_queue import pending_queue
-            logger.info("🔄 [Agent Startup] Checking for previously stored contents in pending upload queue...")
-            startup_upload_res = pending_queue.process_startup_stored_contents(force=True)
-            if startup_upload_res.get("dispatched_count", 0) > 0:
-                logger.info(f"🚀 [Agent Startup] Auto-dispatched {startup_upload_res['dispatched_count']} stored book upload job(s) from previous sessions!")
-        except Exception as startup_pq_e:
-            logger.warning(f"Could not process startup stored uploads: {startup_pq_e}")
-
         iteration = 0
+        unhealthy_streak = 0
         while self.running:
             try:
                 time.sleep(10)
                 iteration += 1
 
-                # 1. Health check backend
-                if not self.check_health():
-                    logger.warning("⚠️ Backend server unresponsive! Auto-restarting...")
-                    self.start_server()
+                # 1. Health check backend (require 3 consecutive failures before restarting)
+                if self.check_health():
+                    unhealthy_streak = 0
+                else:
+                    unhealthy_streak += 1
+                    if unhealthy_streak >= 3:
+                        logger.warning("⚠️ Backend server unresponsive (3 checks)! Auto-restarting...")
+                        self.start_server()
+                        unhealthy_streak = 0
 
                 # 2. Extract public URL if not yet captured
                 if not self.public_url:

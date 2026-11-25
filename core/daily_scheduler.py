@@ -48,6 +48,8 @@ class DailyPublishScheduler:
         self._thread: Optional[threading.Thread] = None
         self._startup_thread: Optional[threading.Thread] = None
         self._lock = threading.Lock()
+        self._pipeline_lock = threading.Lock()
+        self._last_failure_ts = 0.0
         self._startup_executed = False
         self._ensure_config()
 
@@ -296,8 +298,12 @@ class DailyPublishScheduler:
             logger.info(f"🏁 [Startup Sentry] Startup coordinator finished with status: {res.get('status')}")
             if res.get("status") == "completed":
                 self._record_run_success(res)
+            elif res.get("status") == "failed":
+                self._last_failure_ts = time.time()
 
         except Exception as e:
+            self._startup_executed = True
+            self._last_failure_ts = time.time()
             logger.error(f"❌ [Startup Sentry] Error in startup coordination: {e}", exc_info=True)
 
     def _run_loop(self):
@@ -309,14 +315,23 @@ class DailyPublishScheduler:
                     time.sleep(30)
                     continue
 
-                from core.background_orchestrator import BackgroundPublishingOrchestrator
-                orch = BackgroundPublishingOrchestrator()
                 interval_hours = float(cfg.get("interval_hours", self.default_interval_hours))
 
                 # If interval is 0 or less, recurring periodic loop is disabled
                 if interval_hours <= 0:
                     time.sleep(60)
                     continue
+
+                # Wait for startup sentry & enforce 30-min cooldown after errors to protect Gemini quota
+                if cfg.get("startup_prereq_wait", True) and not self._startup_executed:
+                    time.sleep(60)
+                    continue
+                if self._last_failure_ts and (time.time() - self._last_failure_ts) < 1800:
+                    time.sleep(60)
+                    continue
+
+                from core.background_orchestrator import BackgroundPublishingOrchestrator
+                orch = BackgroundPublishingOrchestrator()
 
                 # Check orchestrator tracker as the single source of truth for interval
                 if orch.is_run_due(min_interval_hours=interval_hours):
@@ -335,6 +350,10 @@ class DailyPublishScheduler:
         Generates book via Gemini 4 Argon, compiles PDFs & catalog,
         and posts directly to Amazon KDP and Flipkart Seller Hub.
         """
+        if not self._pipeline_lock.acquire(blocking=force):
+            logger.info("⏳ [DailyPublishScheduler] Pipeline run already in progress. Skipping overlapping trigger.")
+            return {"status": "skipped", "message": "Pipeline already running"}
+
         cfg = self.get_config()
         today_str = datetime.date.today().strftime("%Y-%m-%d")
         auto_upload = cfg.get("auto_upload", "both")
@@ -360,6 +379,7 @@ class DailyPublishScheduler:
 
             status_val = res.get("status", "completed")
             if status_val == "completed":
+                self._last_failure_ts = 0.0
                 self._record_run_success(res)
                 title = res.get("title", "Daily Book")
                 pages = res.get("pages", 0)
@@ -381,11 +401,13 @@ class DailyPublishScheduler:
                         c["last_run_status"] = "cooldown"
                         self._save_config(c)
             else:
+                self._last_failure_ts = time.time()
                 logger.warning(f"⚠️ [DailyPublishScheduler] Run completed with status: {status_val}")
 
             return res
 
         except Exception as e:
+            self._last_failure_ts = time.time()
             logger.error(f"❌ [DailyPublishScheduler] Pipeline execution failed: {e}", exc_info=True)
             with self._lock:
                 cfg = self.get_config()
@@ -398,6 +420,8 @@ class DailyPublishScheduler:
                 urgency="critical"
             )
             return {"status": "failed", "error": str(e), "date": today_str}
+        finally:
+            self._pipeline_lock.release()
 
     def _record_run_success(self, res: Dict[str, Any]):
         """Records successful run timestamp in schedule config."""

@@ -100,16 +100,18 @@ class KDPAssistant:
                 # If on bookshelf, navigate directly to Title Setup or click "Create"
                 if "title-setup" not in page.url:
                     if "bookshelf" in page.url:
-                        create_btn = page.locator("a:has-text('Create'), button:has-text('Create'), #create-title-btn, a[href*='createnew/create']")
+                        create_btn = page.locator("#create-title-btn, a[href*='createnew/create'], a:has-text('Create'), button:has-text('Create')")
                         if create_btn.count() > 0:
                             try:
                                 create_btn.first.click()
-                                time.sleep(3)
+                                page.wait_for_load_state("domcontentloaded", timeout=15000)
+                                time.sleep(2)
                                 target_choice = "Create paperback" if book_type == "paperback" else "Create eBook"
                                 choice_btn = page.locator(f"button:has-text('{target_choice}'), a:has-text('{target_choice}')")
                                 if choice_btn.count() > 0:
                                     choice_btn.first.click()
-                                    time.sleep(3)
+                                    page.wait_for_load_state("domcontentloaded", timeout=15000)
+                                    time.sleep(2)
                             except Exception as e:
                                 log(f"Could not auto-click Create button: {e}")
                     if "title-setup" not in page.url and not any(x in page.url for x in ["signin", "ap/signin", "openid"]):
@@ -197,10 +199,14 @@ class KDPAssistant:
     def _fill_step1_details(self, page: Page, amz: Dict[str, Any], log: Callable) -> bool:
         """Fills title, subtitle, author, description, rights, and keywords. Returns True if title was populated."""
         try:
-            # Title
-            title_input = page.locator("input[name*='title'], #data-print-book-title, #data-book-title")
+            # Title (wait briefly for React/SPA form controls and skip hidden matching inputs)
+            title_input = page.locator("#data-print-book-title, #data-book-title, input[id*='book-title'], input[name*='title']:visible")
+            try:
+                title_input.first.wait_for(state="visible", timeout=8000)
+            except Exception:
+                pass
             if title_input.count() == 0 or not title_input.first.is_visible():
-                log("⚠️ Title input field not found or not visible on current page.")
+                log(f"⚠️ Title input field not found or not visible on current page ({page.url}).")
                 return False
 
             title_input.first.fill(amz.get("title", ""))

@@ -42,6 +42,8 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 @app.on_event("startup")
 async def on_app_startup():
     """On FastAPI server startup, check and upload any stored pending contents."""
+    if os.environ.get("PUBLISHER_SUPERVISED") == "1":
+        return
     import threading
     def _flush_on_startup():
         try:
