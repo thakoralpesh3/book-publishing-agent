@@ -140,3 +140,11 @@ BOOK_TYPES = {
 DEFAULT_PUBLISHER_NAME = os.environ.get("DEFAULT_PUBLISHER", "Independent Publishing Press")
 DEFAULT_AUTHOR_NAME = os.environ.get("DEFAULT_AUTHOR", "Alpesh Patel")
 
+# Flipkart Marketplace Seller API v3 Credentials (API fallback when browser upload is unavailable)
+FLIPKART_APP_ID = os.environ.get("FLIPKART_APP_ID", "")
+FLIPKART_APP_SECRET = os.environ.get("FLIPKART_APP_SECRET", "")
+FLIPKART_LOCATION_ID = os.environ.get("FLIPKART_LOCATION_ID", "")
+FLIPKART_SANDBOX = os.environ.get("FLIPKART_SANDBOX", "").lower() in ("1", "true", "yes")
+FLIPKART_SHIPPING_PROVIDER = os.environ.get("FLIPKART_SHIPPING_PROVIDER", "FLIPKART")
+
+

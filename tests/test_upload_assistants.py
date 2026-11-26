@@ -115,6 +115,12 @@ class TestUploadAssistants(unittest.TestCase):
                 auto_advance=True,
                 keep_open_seconds=0
             )
+            import time
+            for _ in range(30):
+                job = get_upload_job(job_id)
+                if job and job.get("status") in ("completed", "failed"):
+                    break
+                time.sleep(0.05)
             self.assertTrue(job_id.startswith("job_kdp_"))
             job = get_upload_job(job_id)
             self.assertIsNotNone(job)
@@ -149,6 +155,12 @@ class TestUploadAssistants(unittest.TestCase):
             status_data = status_resp.json()
             self.assertEqual(status_data["job_id"], job_id)
             self.assertEqual(status_data["platform"], "flipkart")
+            import time
+            for _ in range(30):
+                job = get_upload_job(job_id)
+                if job and job.get("status") in ("completed", "failed"):
+                    break
+                time.sleep(0.05)
 
 if __name__ == "__main__":
     unittest.main()

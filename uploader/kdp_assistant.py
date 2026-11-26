@@ -251,6 +251,8 @@ class KDPAssistant:
         if not clean_opts or not segment:
             return None
         seg_l = segment.strip().lower()
+        if seg_l in {"books", "nonfiction"}:
+            return None
         for o in clean_opts:
             if o.strip().lower() == seg_l:
                 return o
