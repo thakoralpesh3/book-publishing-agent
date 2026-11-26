@@ -79,6 +79,52 @@ class TestBackgroundOrchestrator(unittest.TestCase):
         kids_trend = self.orchestrator._select_daily_trend(preferred_category="kids")
         self.assertEqual(kids_trend.get("category"), "kids")
 
+    def test_04b_select_daily_trend_skips_generated_and_avoids_slug_collisions(self):
+        """Verifies _select_daily_trend skips previously generated books (even when folder slug has underscores) and avoids disk overwrites."""
+        temp_out = self.temp_dir / "out"
+        (temp_out / "kids_drawing_book__step-by-step_cute_animals__dood").mkdir(parents=True, exist_ok=True)
+        with patch("config.OUTPUT_DIR", temp_out):
+            selected = self.orchestrator._select_daily_trend()
+            self.assertNotEqual(selected.get("id"), "kids-drawing-animals-masterclass")
+
+            # Also verify BookWriter never overwrites an existing slug folder
+            from core.book_writer import BookWriter
+            mock_engine = MagicMock()
+            mock_engine.generate_book_outline.return_value = {
+                "title": "Kids Drawing Book: Step-by-Step Cute Animals, Doodles, Simple Shapes and Practice Canvases",
+                "subtitle": "Sub",
+                "chapters": [{"chapter_number": 1, "title": "Ch1", "key_takeaways": ["k"]}]
+            }
+            mock_engine.generate_front_and_back_matter.return_value = {"dedication": "d", "preface": "p", "author_bio": "b", "review_cta": "r"}
+            mock_engine.generate_chapter_content.return_value = "# Chapter 1\nBody"
+            writer = BookWriter(mock_engine)
+            res = writer.create_book(topic="Cute animals drawing", target_chapters=1, book_type="activity_drawing")
+            self.assertNotEqual(res["slug"], "kids_drawing_book__step-by-step_cute_animals__dood")
+            self.assertTrue(res["slug"].endswith("_2"))
+
+    def test_04c_select_daily_trend_scouts_fresh_trends_when_exhausted(self):
+        """Verifies live scouting with exclude_topics is triggered when local/default trends are exhausted."""
+        temp_out = self.temp_dir / "out_empty"
+        temp_out.mkdir(parents=True, exist_ok=True)
+        today_utc = __import__("datetime").datetime.utcnow().strftime("%Y-%m-%d")
+        fresh_trend = {
+            "id": f"space-doodles-{today_utc}",
+            "title": "Outer Space Doodles for Creative Kids",
+            "topic": "Space drawing book",
+            "category": "kids",
+            "book_type": "activity_drawing",
+            "suggested_trim_size": "8.5x11",
+            "suggested_chapters": 5,
+            "scouted_date": today_utc,
+            "demand_score": 99
+        }
+        with patch("config.OUTPUT_DIR", temp_out):
+            with patch("core.trend_radar.TrendRadar.scout_live_trends", return_value={"status": "success", "trends": [fresh_trend]}) as mock_scout:
+                with patch("core.trend_radar.TrendRadar.get_trends", side_effect=[[], [], [fresh_trend]]):
+                    picked = self.orchestrator._select_daily_trend(preferred_category="kids", allow_live_scout=True)
+                    mock_scout.assert_called_once()
+                    self.assertEqual(picked.get("id"), fresh_trend["id"])
+
     @patch("core.background_orchestrator.GeminiBookEngine")
     @patch("core.background_orchestrator.BookWriter")
     @patch("core.background_orchestrator.ManuscriptCompiler")

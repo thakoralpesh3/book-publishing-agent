@@ -355,27 +355,36 @@ class TrendRadar:
                 return t
         return None
 
-    def scout_live_trends(self) -> Dict[str, Any]:
+    def scout_live_trends(
+        self,
+        exclude_topics: Optional[List[str]] = None,
+        category: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Scouts current Amazon & Flipkart daily trends using Gemini market intelligence."""
         logger.info("Scouting daily trends with Gemini market intelligence...")
+        today_str = datetime.utcnow().strftime("%Y-%m-%d")
+        avoid_block = ""
+        if exclude_topics:
+            recent = [t.strip() for t in exclude_topics if t and t.strip()][-25:]
+            if recent:
+                avoid_list = "\n".join(f"- {t}" for t in recent)
+                avoid_block = f"\n\nCRITICAL ANTI-DUPLICATION RULE:\nDo NOT repeat, paraphrase, or use the same core subject as ANY of these already-published books:\n{avoid_list}\n"
+        cat_focus = f"\nPrioritize fresh sub-niches in category '{category}'." if category and category.lower() not in ["all", "any", ""] else ""
+
         sys_prompt = (
             "You are an elite publishing market analyst specializing in Amazon KDP Bestsellers, "
             "Movers & Shakers, and Flipkart Seller Hub book categories in India and globally. "
-            "Identify real, high-demand, high-profit publishing niches that are currently trending."
+            "Identify real, distinct, high-demand publishing niches that are currently trending."
         )
-        prompt = """
-Scout the top 6 daily trending book publishing opportunities across Amazon KDP (Kindle & Paperback) and Flipkart Seller Hub.
-Focus on high-demand, actionable niches, including:
-1. Children's Drawing & Activity Books (How-to-draw, tracing, doodles, ages 4-9)
-2. Personal Finance & Wealth ("How to Get Rich", cash flow, money psychology, investing)
-3. Productivity & Mindset (Dopamine detox, habits, mental clarity)
-4. AI & High-Income Skills (Prompting, digital assets)
-5. Health & Posture (Mobility routines, wellness)
+        prompt = f"""
+Today's Date: {today_str}
+Scout 6 fresh, distinct daily trending book publishing opportunities across Amazon KDP (Kindle & Paperback) and Flipkart Seller Hub.{cat_focus}{avoid_block}
+Explore varied high-demand angles (e.g., Kids Dinosaurs/Space/Mandala Drawing, Personal Finance/SIP/Passive Income, Focus/Habit Design, Practical AI Workflows, Wellness/Sleep/Nutrition, Career & Communication Skills) and create unique titles and slug IDs.
 
 Return a valid JSON array of objects with this EXACT structure for each trend:
 [
-  {
-    "id": "slug-identifier",
+  {{
+    "id": "unique-slug-identifier-{today_str}",
     "title": "Compelling Bestseller Title",
     "subtitle": "Clear Subtitle with Value Proposition",
     "topic": "Detailed prompt topic for automated generation",
@@ -385,7 +394,7 @@ Return a valid JSON array of objects with this EXACT structure for each trend:
     "book_type": "activity_drawing|standard",
     "suggested_trim_size": "8.5x11|6x9",
     "suggested_chapters": 5,
-    "demand_score": 95,
+    "demand_score": 99,
     "competition_score": "Low|Medium",
     "profit_potential": "Very High|High",
     "badge": "Amazon Bestseller Trend",
@@ -393,7 +402,7 @@ Return a valid JSON array of objects with this EXACT structure for each trend:
     "flipkart_signals": ["Signal 1", "Signal 2"],
     "recommended_keywords": ["keyword 1", "keyword 2", "keyword 3", "keyword 4", "keyword 5"],
     "is_hot_daily_trend": true
-  }
+  }}
 ]
 """
         try:
@@ -401,11 +410,16 @@ Return a valid JSON array of objects with this EXACT structure for each trend:
             if isinstance(new_trends, dict) and "trends" in new_trends:
                 new_trends = new_trends["trends"]
             if isinstance(new_trends, list) and len(new_trends) > 0:
-                # Merge: Keep existing defaults if not present, update or prepend new trends
-                existing_map = {t["id"]: t for t in DEFAULT_TRENDS}
+                # Merge freshly scouted trends first, retaining curated defaults without letting them outrank fresh topics
+                existing_map: Dict[str, Dict[str, Any]] = {}
                 for nt in new_trends:
                     if isinstance(nt, dict) and "id" in nt and "title" in nt:
-                        existing_map[nt["id"]] = nt
+                        nt_copy = dict(nt)
+                        nt_copy["scouted_date"] = today_str
+                        nt_copy["demand_score"] = max(int(nt_copy.get("demand_score", 95) or 95), 99)
+                        existing_map[nt_copy["id"]] = nt_copy
+                for dt in DEFAULT_TRENDS:
+                    existing_map.setdefault(dt["id"], dt)
                 combined = list(existing_map.values())
                 self._save_trends(combined, last_scouted=f"Gemini Live Scout ({datetime.utcnow().strftime('%Y-%m-%d %H:%M')})")
                 return {

@@ -8,6 +8,7 @@ generates the complete book package headlessly, and dispatches desktop notificat
 import os
 import sys
 import json
+import re
 import time
 import psutil
 import logging
@@ -204,24 +205,127 @@ class BackgroundPublishingOrchestrator:
             "publisher_daily_due": self.is_daily_run_due()
         }
 
-    def _select_daily_trend(self, preferred_category: Optional[str] = None) -> Dict[str, Any]:
-        """Picks the top high-demand trend that hasn't been generated yet today."""
+    @staticmethod
+    def _normalize_topic_tokens(text: str) -> set:
+        stop = {"the", "a", "an", "for", "and", "of", "in", "to", "with", "on", "by", "your", "how", "edition", "vol"}
+        return {w for w in re.findall(r"[a-z0-9]+", (text or "").lower()) if len(w) > 1 and w not in stop}
+
+    def _collect_used_books(self) -> tuple:
+        """Collects previously generated trend IDs, titles, and folder slugs to prevent repeat books."""
+        used_ids = set()
+        used_titles: List[str] = []
+
+        data = self.get_tracker_data()
+        for entry in data.get("history", []):
+            if entry.get("trend_id"):
+                used_ids.add(entry["trend_id"])
+            for field in ("title", "slug"):
+                if entry.get(field):
+                    used_titles.append(str(entry[field]))
+        for field in ("last_book_title", "last_book_slug"):
+            if data.get(field):
+                used_titles.append(str(data[field]))
+
+        if config.OUTPUT_DIR.exists():
+            for p in config.OUTPUT_DIR.iterdir():
+                if not p.is_dir():
+                    continue
+                used_titles.append(p.name)
+                bd_file = p / "book_data.json"
+                if bd_file.exists():
+                    try:
+                        bd = json.loads(bd_file.read_text(encoding="utf-8"))
+                        if bd.get("trend_id"):
+                            used_ids.add(bd["trend_id"])
+                        if bd.get("title"):
+                            used_titles.append(str(bd["title"]))
+                    except Exception:
+                        pass
+
+        # Deduplicate while preserving order
+        seen = set()
+        unique_titles = []
+        for t in used_titles:
+            norm = t.strip()
+            if norm and norm not in seen:
+                seen.add(norm)
+                unique_titles.append(norm)
+        return used_ids, unique_titles
+
+    def _is_trend_used(self, trend: Dict[str, Any], used_ids: set, used_titles: List[str]) -> bool:
+        t_id = (trend.get("id") or "").strip()
+        if t_id and t_id in used_ids:
+            return True
+
+        title = (trend.get("title") or "").strip()
+        id_norm = re.sub(r"[^\w]+", "_", t_id.lower()).strip("_")
+        title_slug_prefix = re.sub(r"[^\w\-]", "_", title.lower())[:28].strip("_")
+        t_tokens = self._normalize_topic_tokens(f"{title} {t_id.replace('-', ' ')}")
+
+        for used in used_titles:
+            u_norm = re.sub(r"[^\w\-]+", "_", used.lower()).strip("_")
+            if id_norm and (id_norm in u_norm or u_norm in id_norm):
+                return True
+            if title_slug_prefix and len(title_slug_prefix) >= 12 and title_slug_prefix in u_norm:
+                return True
+            u_tokens = self._normalize_topic_tokens(used)
+            if len(t_tokens) >= 3 and len(u_tokens) >= 3:
+                overlap = len(t_tokens & u_tokens)
+                threshold = min(4, max(3, int(min(len(t_tokens), len(u_tokens)) * 0.6)))
+                if overlap >= threshold:
+                    return True
+        return False
+
+    def _select_daily_trend(
+        self,
+        preferred_category: Optional[str] = None,
+        allow_live_scout: bool = False
+    ) -> Dict[str, Any]:
+        """Picks a genuinely new daily book trend, scouting live niches when cached ones are used or stale."""
         radar = TrendRadar()
-        trends = radar.get_trends(category=preferred_category)
+        used_ids, used_titles = self._collect_used_books()
+        cat_filter = preferred_category if (preferred_category and preferred_category.lower() not in ["all", "any", ""]) else None
+        today_utc = datetime.datetime.utcnow().strftime("%Y-%m-%d")
+
+        trends = radar.get_trends(category=cat_filter)
         if not trends:
             trends = radar.get_trends()
 
-        # Check already generated slugs to avoid exact repeats
-        existing_slugs = [p.name for p in config.OUTPUT_DIR.iterdir() if p.is_dir()]
-        for t in trends:
-            t_id = t.get("id", "")
-            if not any(t_id in s for s in existing_slugs):
-                return t
+        unused = [t for t in trends if not self._is_trend_used(t, used_ids, used_titles)]
+        has_todays_scout = any(t.get("scouted_date") == today_utc and not self._is_trend_used(t, used_ids, used_titles) for t in unused)
 
-        return trends[0] if trends else {
-            "title": "The Daily Financial Freedom Playbook",
+        if allow_live_scout and (not unused or not has_todays_scout):
+            scout_res = radar.scout_live_trends(exclude_topics=used_titles, category=cat_filter)
+            if scout_res.get("status") == "success":
+                refreshed = radar.get_trends(category=cat_filter) or radar.get_trends()
+                fresh_unused = [t for t in refreshed if not self._is_trend_used(t, used_ids, used_titles)]
+                if fresh_unused:
+                    # Prefer freshly scouted trends over stale defaults
+                    todays = [t for t in fresh_unused if t.get("scouted_date") == today_utc]
+                    return todays[0] if todays else fresh_unused[0]
+                trends = refreshed
+                unused = fresh_unused
+
+        if unused:
+            # When running cleanly without today's live scout (e.g., offline CI), rotate by date across unused entries
+            if allow_live_scout and len(unused) > 1:
+                idx = (datetime.date.today().toordinal() + len(used_titles)) % len(unused)
+                return unused[idx]
+            return unused[0]
+
+        if trends:
+            base = dict(trends[(datetime.date.today().toordinal() + len(used_titles)) % len(trends)])
+            today_label = datetime.date.today().strftime("%b %d %Y")
+            base["id"] = f"{base.get('id', 'daily')}-{datetime.date.today().strftime('%Y%m%d')}"
+            base["title"] = f"{base.get('title', 'Daily Focus Playbook')} ({today_label} Edition)"
+            base["topic"] = f"{base.get('topic', base['title'])} — fresh new examples, exercises, and templates ({today_label})"
+            return base
+
+        return {
+            "id": f"daily-playbook-{datetime.date.today().strftime('%Y%m%d')}",
+            "title": f"The Daily Financial Freedom Playbook ({datetime.date.today().strftime('%b %d')})",
             "topic": "How to Get Rich in the Modern AI Economy: Practical Money Mindset, Cash Flow Systems, and Scalable Wealth",
-            "category": "wealth",
+            "category": cat_filter or "wealth",
             "book_type": "standard",
             "suggested_trim_size": "6x9",
             "suggested_chapters": 5,
@@ -308,7 +412,7 @@ class BackgroundPublishingOrchestrator:
                 "target_audience": "General Reader"
             }
         else:
-            trend_obj = self._select_daily_trend(preferred_category=category)
+            trend_obj = self._select_daily_trend(preferred_category=category, allow_live_scout=True)
 
         topic = trend_obj.get("topic") or trend_obj.get("title")
         book_type = trend_obj.get("book_type", "standard")
@@ -390,7 +494,8 @@ class BackgroundPublishingOrchestrator:
                 for issue in audit_report["issues"]:
                     logger.warning(f"  [Audit Issue]: {issue}")
 
-            # Record in daily tracker
+            # Record in daily tracker (including trend_id so repeats are blocked)
+            book_data["trend_id"] = trend_obj.get("id", "")
             self._record_completion(book_data)
 
             # Trigger auto-upload assistant if requested
@@ -507,6 +612,7 @@ class BackgroundPublishingOrchestrator:
         history_entry = {
             "date": today_str,
             "timestamp": now_ts,
+            "trend_id": book_data.get("trend_id", ""),
             "slug": book_data.get("slug", ""),
             "title": book_data.get("title", ""),
             "pages": book_data.get("final_page_count", 0),

@@ -14,14 +14,15 @@ on:
       category:
         description: 'Trending Category (if topic empty)'
         required: true
-        default: 'kids'
+        default: 'all'
         type: choice
         options:
+          - all
           - kids
           - wealth
-          - self-help
+          - mindset
           - tech
-          - business
+          - health
       model:
         description: 'Gemini Model'
         required: true
@@ -118,8 +119,12 @@ jobs:
               --trim-size ${{ inputs.trim_size || '6x9' }} \
               --book-type ${{ inputs.book_type || 'auto' }}
           else
-            echo "Generating book from daily ${{ inputs.category || 'kids' }} trends..."
-            python3 main.py run-background --force --category "${{ inputs.category || 'kids' }}"
+            CAT_ARG=""
+            if [ -n "${{ inputs.category }}" ] && [ "${{ inputs.category }}" != "all" ]; then
+              CAT_ARG="--category ${{ inputs.category }}"
+            fi
+            echo "Generating book from daily trends (${{ inputs.category || 'all' }})..."
+            python3 main.py run-background --force $CAT_ARG
           fi
 
       - name: Run Preflight Zero-Mistake Audit

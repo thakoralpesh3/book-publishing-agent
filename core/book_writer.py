@@ -50,7 +50,12 @@ class BookWriter:
         author = custom_author or outline.get("author_name") or config.DEFAULT_AUTHOR_NAME
         publisher = custom_publisher or outline.get("publisher_name") or config.DEFAULT_PUBLISHER_NAME
 
-        slug = re.sub(r"[^\w\-]", "_", title.lower())[:50]
+        base_slug = re.sub(r"[^\w\-]", "_", title.lower())[:50].strip("_") or "generated_book"
+        slug = base_slug
+        suffix = 2
+        while (config.OUTPUT_DIR / slug).exists():
+            slug = f"{base_slug[:44]}_{suffix}"
+            suffix += 1
         book_dir = config.OUTPUT_DIR / slug
         book_dir.mkdir(parents=True, exist_ok=True)
 

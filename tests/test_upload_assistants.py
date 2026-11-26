@@ -92,6 +92,18 @@ class TestUploadAssistants(unittest.TestCase):
         self.assertIn("22.86", payload["dimensions_cm"])
         self.assertIn("•", payload["highlights_formatted"])
 
+    def test_02b_kdp_marketplace_and_category_matching(self):
+        """Verifies live KDP marketplace mapping and category dropdown matching helpers."""
+        opts = ["us", "uk", "de", "jp", "ca", "au"]
+        self.assertEqual(KDPAssistant._resolve_marketplace_code(opts, "amazon.in"), "us")
+        self.assertEqual(KDPAssistant._resolve_marketplace_code(opts, "amazon.co.uk"), "uk")
+
+        top_opts = ["Select one", "Business & Money", "Children's Books", "Computers & Technology", "Self-Help"]
+        self.assertEqual(KDPAssistant._match_category_option_label("Children's Books", top_opts), "Children's Books")
+        self.assertEqual(KDPAssistant._match_category_option_label("Business", top_opts), "Business & Money")
+        self.assertEqual(KDPAssistant._match_category_option_label("Productivity", top_opts), "Self-Help")
+        self.assertIsNone(KDPAssistant._match_category_option_label("Books", top_opts))
+
     def test_03_upload_manager_start_and_status(self):
         """Verifies asynchronous job creation and tracking via UploadManager."""
         with patch.object(KDPAssistant, "launch_assisted_session") as mock_kdp:
