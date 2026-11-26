@@ -303,6 +303,27 @@ class TestPendingUploadQueue(unittest.TestCase):
         self.assertEqual(len(pending), 1)
         self.assertEqual(pending[0]["next_retry_at"], 0.0)
 
+    def test_11_auth_blocked_items_skip_unforced_after_max_retries(self):
+        """Verify login/credential-blocked items stop looping every 5 mins when force=False, yet run with force=True."""
+        entry = None
+        for _ in range(5):
+            entry = self.queue.add_or_update(
+                slug=self.slug,
+                platform="flipkart",
+                error_reason="login_required: Flipkart Seller Hub sign-in is required"
+            )
+        self.assertTrue(entry.get("auth_required"))
+        self.assertEqual(entry.get("retry_count"), 5)
+
+        res_unforced = self.queue.process_pending_queue(force=False)
+        self.assertEqual(res_unforced.get("dispatched_count"), 0)
+        self.assertTrue(any("authentication" in s.get("reason", "").lower() for s in res_unforced.get("skipped", [])))
+
+        with patch.object(self.queue, "is_platform_healthy", return_value=True):
+            with patch("uploader.upload_manager.start_upload_job", return_value="job-forced-auth"):
+                res_forced = self.queue.process_pending_queue(force=True)
+                self.assertEqual(res_forced.get("dispatched_count"), 1)
+
 
 if __name__ == "__main__":
     unittest.main()

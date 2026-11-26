@@ -409,12 +409,16 @@ def main():
 
     elif args.command == "run-background":
         from core.background_orchestrator import BackgroundPublishingOrchestrator
+        from core.daily_scheduler import daily_scheduler
+        sched_cfg = daily_scheduler.get_config()
+        interval_h = float(sched_cfg.get("interval_hours", 0.0))
         orchestrator = BackgroundPublishingOrchestrator()
         result = orchestrator.run_daily_publishing_pipeline(
             force=args.force,
             category=args.category,
             custom_topic=args.topic,
-            auto_upload=getattr(args, "auto_upload", "none")
+            auto_upload=getattr(args, "auto_upload", "none"),
+            min_interval_hours=interval_h
         )
         print(f"\nBackground Pipeline Result: {result.get('status')}")
         if result.get("book_slug"):

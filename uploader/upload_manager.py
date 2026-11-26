@@ -28,6 +28,7 @@ def start_upload_job(
     platform: str, # "kdp" or "flipkart"
     headless: bool = False,
     auto_advance: bool = True,
+    auto_publish: bool = True,
     keep_open_seconds: int = 120
 ) -> str:
     """Launches an upload assistant in a background worker thread and returns job_id."""
@@ -71,6 +72,7 @@ def start_upload_job(
                         headless=headless,
                         progress_cb=_cb,
                         auto_advance=auto_advance,
+                        auto_publish=auto_publish,
                         keep_open_seconds=keep_open_seconds
                     )
                 elif platform.lower() == "flipkart":
@@ -94,10 +96,11 @@ def start_upload_job(
                     job["status"] = "completed"
                     job["progress"] = 100
                     job["result"] = res
-                    job["current_step"] = f"✅ {platform.upper()} assistant completed successfully."
+                    mode_label = f" ({res['mode'].upper()})" if res.get("mode") else ""
+                    job["current_step"] = f"✅ {platform.upper()}{mode_label} upload completed successfully."
                     from uploader.pending_queue import pending_queue
                     pending_queue.mark_completed(slug=slug, platform=platform)
-                    logger.info(f"Upload job {job_id} completed successfully.")
+                    logger.info(f"Upload job {job_id} completed successfully{mode_label}.")
 
             except Exception as e:
                 logger.exception(f"Error in upload job {job_id}: {e}")

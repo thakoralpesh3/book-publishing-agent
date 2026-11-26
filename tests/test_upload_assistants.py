@@ -162,5 +162,83 @@ class TestUploadAssistants(unittest.TestCase):
                     break
                 time.sleep(0.05)
 
+    def test_05_flipkart_api_payload_and_auth_upload(self):
+        """Verifies Flipkart Seller API v3 payload construction, OAuth2 token fetch, and listing upload."""
+        from uploader.flipkart_api import FlipkartSellerAPI
+
+        api = FlipkartSellerAPI(app_id="test_app", app_secret="test_secret", location_id="LOC123", sandbox=True)
+        self.assertEqual(api.base_url, "https://sandbox-api.flipkart.net")
+        self.assertTrue(api.is_configured())
+
+        payload = api.build_listing_payload(self.mock_dossier)
+        sku_id = next(iter(payload.keys()))
+        entry = payload[sku_id]
+        self.assertEqual(entry["product_id"], "9789309324604")
+        self.assertEqual(entry["tax"]["hsn"], "49011000")
+        self.assertEqual(entry["tax"]["tax_code"], "GST_0")
+        self.assertEqual(entry["price"]["mrp"], 499)
+        self.assertEqual(entry["price"]["selling_price"], 399)
+        self.assertEqual(entry["packages"][0]["weight"], 0.185)
+        self.assertEqual(entry["locations"][0]["id"], "LOC123")
+
+        mock_oauth_resp = MagicMock(status_code=200)
+        mock_oauth_resp.json.return_value = {"access_token": "tok_abc", "expires_in": 3600}
+        mock_list_resp = MagicMock(status_code=200)
+        mock_list_resp.json.return_value = {sku_id: {"status": "SUCCESS"}}
+
+        with patch("uploader.flipkart_api.requests.get", return_value=mock_oauth_resp) as m_get:
+            with patch("uploader.flipkart_api.requests.post", return_value=mock_list_resp) as m_post:
+                res = api.upload_listing(self.book_dir)
+                self.assertEqual(res["status"], "completed")
+                self.assertEqual(res["mode"], "api")
+                m_get.assert_called_once()
+                self.assertEqual(m_post.call_count, 2)  # create listing + inventory sync
+
+        # Missing credentials returns clear api_credentials_missing code
+        unconfigured = FlipkartSellerAPI(app_id="", app_secret="")
+        miss_res = unconfigured.upload_listing(self.book_dir)
+        self.assertEqual(miss_res["status"], "failed")
+        self.assertEqual(miss_res["error_code"], "api_credentials_missing")
+
+    def test_06_flipkart_assistant_falls_back_to_api_when_browser_fails(self):
+        """Verifies FlipkartAssistant automatically uses Flipkart Seller API v3 when browser automation is unavailable."""
+        assistant = FlipkartAssistant(user_data_dir=self.test_dir / "fk_profile")
+        with patch("uploader.flipkart_assistant.sync_playwright", side_effect=RuntimeError("no browser display")):
+            with patch("uploader.flipkart_api.FlipkartSellerAPI.upload_listing", return_value={
+                "status": "completed", "platform": "flipkart", "mode": "api", "sku_id": "FP-BK-TEST", "product_id": "9789309324604"
+            }) as mock_api:
+                res = assistant.launch_assisted_session(self.book_dir, headless=True, keep_open_seconds=0)
+                mock_api.assert_called_once()
+                self.assertEqual(res["status"], "completed")
+                self.assertEqual(res["mode"], "api")
+
+    def test_07_kdp_step3_auto_publish_and_draft_modes(self):
+        """Verifies KDP Step 3 sets territory/price and clicks Publish when auto_publish=True, or Save as Draft otherwise."""
+        assistant = KDPAssistant(user_data_dir=self.test_dir / "kdp_profile")
+
+        def make_mock_page():
+            page = MagicMock()
+            page.url = "https://kdp.amazon.com/en_US/title-setup/paperback/ABC/pricing"
+            loc = MagicMock()
+            loc.count.return_value = 1
+            loc.first = loc
+            loc.is_visible.return_value = True
+            loc.is_enabled.return_value = True
+            page.locator.return_value = loc
+            page.evaluate.return_value = []
+            return page, loc
+
+        page_pub, loc_pub = make_mock_page()
+        with patch.object(assistant, "_collect_visible_alerts", return_value=[]):
+            ok_pub = assistant._fill_step3_pricing(page_pub, self.mock_dossier["amazon_kdp"], lambda *a, **k: None, auto_publish=True)
+            self.assertTrue(ok_pub)
+            loc_pub.fill.assert_called()
+            loc_pub.click.assert_called()
+
+        page_draft, loc_draft = make_mock_page()
+        ok_draft = assistant._fill_step3_pricing(page_draft, self.mock_dossier["amazon_kdp"], lambda *a, **k: None, auto_publish=False)
+        self.assertTrue(ok_draft)
+        loc_draft.click.assert_called()
+
 if __name__ == "__main__":
     unittest.main()

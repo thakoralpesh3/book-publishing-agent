@@ -410,14 +410,20 @@ Return a valid JSON array of objects with this EXACT structure for each trend:
             if isinstance(new_trends, dict) and "trends" in new_trends:
                 new_trends = new_trends["trends"]
             if isinstance(new_trends, list) and len(new_trends) > 0:
-                # Merge freshly scouted trends first, retaining curated defaults without letting them outrank fresh topics
+                # Merge freshly scouted trends first, retaining existing and default trends for history/fallback
+                curr = self._load_trends_payload()
                 existing_map: Dict[str, Dict[str, Any]] = {}
                 for nt in new_trends:
-                    if isinstance(nt, dict) and "id" in nt and "title" in nt:
+                    if isinstance(nt, dict) and nt.get("title"):
                         nt_copy = dict(nt)
+                        raw_id = str(nt_copy.get("id") or nt_copy["title"])
+                        nt_copy["id"] = re.sub(r"[^a-z0-9\-]+", "-", raw_id.lower()).strip("-")[:60] or f"trend-{today_str}"
                         nt_copy["scouted_date"] = today_str
                         nt_copy["demand_score"] = max(int(nt_copy.get("demand_score", 95) or 95), 99)
                         existing_map[nt_copy["id"]] = nt_copy
+                for ct in curr.get("trends", []):
+                    if isinstance(ct, dict) and ct.get("id"):
+                        existing_map.setdefault(ct["id"], ct)
                 for dt in DEFAULT_TRENDS:
                     existing_map.setdefault(dt["id"], dt)
                 combined = list(existing_map.values())

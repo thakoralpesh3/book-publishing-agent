@@ -25,7 +25,8 @@ class BookWriter:
         custom_author: Optional[str] = None,
         custom_publisher: Optional[str] = None,
         book_type: Optional[str] = None,
-        progress_callback: Optional[callable] = None
+        progress_callback: Optional[callable] = None,
+        trend_id: Optional[str] = None
     ) -> Dict[str, Any]:
         """Creates a complete book package from topic to full manuscript."""
         # Auto-detect book type if not specified
@@ -123,6 +124,7 @@ class BookWriter:
             "author": author,
             "publisher": publisher,
             "slug": slug,
+            "trend_id": trend_id or "",
             "book_dir": str(book_dir),
             "manuscript_path": str(manuscript_path),
             "outline": outline,

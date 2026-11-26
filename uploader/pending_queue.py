@@ -119,19 +119,21 @@ class PendingUploadQueue:
 
         # Resolve reason
         reason = failure_reason or error_reason or "Unknown upload failure"
+        auth_blocked = any(tag in reason.lower() for tag in ("login_required", "onboarding_incomplete", "api_credentials_missing"))
         saved_files = [k for k, v in artifacts.items() if v]
 
         if existing_item:
             retries = existing_item.get("retry_count", existing_item.get("attempts", 0)) + 1
-            # Exponential backoff: 2 min, 5 min, 15 min, 30 min, max 60 min
+            # Exponential backoff: 2 min, 5 min, 15 min, 30 min, max 60 min (or 6h if waiting on login/credentials)
             backoff_intervals = [120, 300, 900, 1800, 3600]
-            delay = backoff_intervals[min(retries - 1, len(backoff_intervals) - 1)]
+            delay = 21600 if auth_blocked else backoff_intervals[min(retries - 1, len(backoff_intervals) - 1)]
 
             existing_item.update({
                 "status": "pending",
                 "title": book_title,
                 "error_reason": reason,
                 "failure_reason": reason,
+                "auth_required": auth_blocked,
                 "failure_stage": failure_stage or existing_item.get("failure_stage", "upload"),
                 "last_attempt": now_iso,
                 "last_attempt_at": now_iso,
@@ -154,6 +156,7 @@ class PendingUploadQueue:
                 "status": "pending",
                 "error_reason": reason,
                 "failure_reason": reason,
+                "auth_required": auth_blocked,
                 "failure_stage": failure_stage or "upload",
                 "created_at": now_iso,
                 "last_attempt": now_iso,
@@ -161,7 +164,7 @@ class PendingUploadQueue:
                 "retry_count": 1,
                 "attempts": 1,
                 "max_retries": 5,
-                "next_retry_at": now + 60,  # First retry after 1 minute
+                "next_retry_at": now + (21600 if auth_blocked else 60),  # 6h if auth needed, else 1 minute
                 "artifacts": artifacts,
                 "saved_files": saved_files
             }
@@ -354,6 +357,19 @@ class PendingUploadQueue:
             platform = item["platform"]
             queue_id = item["queue_id"]
             next_retry = item.get("next_retry_at", 0)
+
+            # Skip unattended background retries once max_retries reached on auth/credentials blocks
+            reason_l = str(item.get("error_reason") or "").lower()
+            is_auth_block = bool(item.get("auth_required")) or any(
+                tag in reason_l for tag in ("login_required", "onboarding_incomplete", "api_credentials_missing")
+            )
+            if not force and is_auth_block and item.get("retry_count", 0) >= item.get("max_retries", 5):
+                skipped.append({
+                    "queue_id": queue_id,
+                    "slug": slug,
+                    "reason": "Waiting for portal authentication or API credentials (use manual Retry or startup check)"
+                })
+                continue
 
             # Check if backoff window has elapsed or if forced
             if not force and now < next_retry:

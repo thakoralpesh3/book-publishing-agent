@@ -7,6 +7,7 @@ import os
 import re
 import json
 import logging
+import subprocess
 import time
 from pathlib import Path
 from typing import Dict, Any, Optional, Callable, List
@@ -26,6 +27,7 @@ class KDPAssistant:
         headless: bool = False,
         progress_cb: Optional[Callable[[str, int], None]] = None,
         auto_advance: bool = True,
+        auto_publish: bool = True,
         keep_open_seconds: int = 120
     ) -> Dict[str, Any]:
         """Launches an interactive Playwright session with KDP pre-filling and file uploading."""
@@ -123,6 +125,7 @@ class KDPAssistant:
 
                 # Check if Amazon redirected to login / password verification (e.g., max_auth_age=0 elevation)
                 if any(x in page.url for x in ["signin", "ap/signin", "openid"]):
+                    self._notify_auth_needed("Amazon KDP requires sign-in / password verification in the browser.")
                     if not effective_headless:
                         log("Action Required: Please complete Amazon Sign-In / Password Verification in the browser window...", 25)
                         try:
@@ -142,7 +145,8 @@ class KDPAssistant:
                         session_error = "form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'."
                         log(f"⚠️ {session_error}", 50)
 
-                # Advance to Step 2 if auto_advance is True and Save and Continue button is visible
+                # Advance to Step 2 and Step 3 if auto_advance is True
+                published_live = False
                 if not session_error and auto_advance:
                     save_btn = page.locator("#save-and-continue-announce, #save-and-continue-button, button:has-text('Save and Continue'), input[value*='Save and Continue']")
                     if save_btn.count() > 0 and save_btn.first.is_visible():
@@ -154,6 +158,7 @@ class KDPAssistant:
                                 if "/content" in page.url or any(x in page.url for x in ["signin", "ap/signin", "openid"]):
                                     break
                             if any(x in page.url for x in ["signin", "ap/signin", "openid"]):
+                                self._notify_auth_needed("Amazon KDP requested re-authentication when saving Step 1.")
                                 session_error = "login_required: Amazon KDP requested re-authentication when saving Step 1. Run 'python3 uploader/login_seller_portals.py kdp'."
                                 log(f"🔑 {session_error}", 65)
                             elif "/content" not in page.url:
@@ -164,14 +169,32 @@ class KDPAssistant:
                             else:
                                 page.wait_for_load_state("domcontentloaded", timeout=15000)
                                 time.sleep(3)
-                                files_ok = self._fill_step2_content(page, amz, interior_pdf, cover_pdf, log)
+                                files_ok = self._fill_step2_content(
+                                    page,
+                                    amz,
+                                    interior_pdf,
+                                    cover_pdf,
+                                    log,
+                                    advance_to_pricing=auto_publish,
+                                )
                                 if not files_ok:
                                     session_error = "content_upload_not_ready: KDP Step 2 manuscript/cover PDF uploaders were not accessible."
                                     log(f"⚠️ {session_error}", 85)
-                                else:
-                                    # Attempt saving draft / advancing to Step 3 pricing if previewer check already allows it
-                                    if "/rights-and-pricing" in page.url:
-                                        self._fill_step3_pricing(page, amz, log)
+                                elif "/pricing" in page.url or "/rights-and-pricing" in page.url:
+                                    published_live = self._fill_step3_pricing(
+                                        page,
+                                        amz,
+                                        log,
+                                        auto_publish=auto_publish,
+                                    )
+                                    if auto_publish and not published_live:
+                                        err_texts = self._collect_visible_alerts(page)
+                                        detail = f" Validation: {' | '.join(err_texts[:3])}" if err_texts else ""
+                                        session_error = f"step3_publish_incomplete: Reached pricing page but could not complete Publish.{detail}"
+                                elif auto_publish:
+                                    err_texts = self._collect_visible_alerts(page)
+                                    detail = f" Notice: {' | '.join(err_texts[:3])}" if err_texts else ""
+                                    session_error = f"step2_preview_incomplete: Uploaded files on Step 2, but could not advance past Print Previewer to Pricing ({page.url}).{detail}"
                         except Exception as e:
                             session_error = f"step2_advance_failed: {e}"
                             log(f"Auto-advance step 2 note: {e}")
@@ -179,16 +202,18 @@ class KDPAssistant:
                         session_error = "step1_save_not_found: Could not find 'Save and Continue' button after filling Step 1."
 
                 if not session_error:
-                    log("✅ Amazon KDP wizard populated! Interior & Cover PDFs prepared.", 95)
-                    log(f"Session will remain active for inspection ({keep_open_seconds}s or until closed).", 100)
-
-                    # Keep session active so user can review and finish
-                    start_wait = time.time()
-                    while time.time() - start_wait < keep_open_seconds:
-                        if page.is_closed():
-                            log("Browser window was closed by user.")
-                            break
-                        time.sleep(2)
+                    if published_live:
+                        log("🎉 Amazon KDP book submitted & published automatically!", 100)
+                    else:
+                        log("✅ Amazon KDP wizard populated! Interior & Cover PDFs prepared.", 95)
+                    if keep_open_seconds > 0 and not effective_headless and not published_live:
+                        log(f"Session will remain active for inspection ({keep_open_seconds}s or until closed).", 100)
+                        start_wait = time.time()
+                        while time.time() - start_wait < keep_open_seconds:
+                            if page.is_closed():
+                                log("Browser window was closed by user.")
+                                break
+                            time.sleep(2)
             except Exception as e:
                 session_error = str(e)
                 log(f"KDP Assistant session exception: {e}")
@@ -290,6 +315,17 @@ class KDPAssistant:
         return best_opt if best_score > 0 else None
 
     @staticmethod
+    def _notify_auth_needed(message: str):
+        """Dispatches desktop notification when KDP asks for password/2FA."""
+        try:
+            subprocess.run(
+                ["notify-send", "-a", "PublisheR AI", "-u", "critical", "-t", "10000", "🔑 Amazon KDP Login Required", message],
+                check=False, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5
+            )
+        except Exception:
+            pass
+
+    @staticmethod
     def _collect_visible_alerts(page: Page) -> List[str]:
         try:
             return page.evaluate("""() => {
@@ -312,26 +348,46 @@ class KDPAssistant:
         if not html_desc and not plain_desc:
             return False
 
-        # 1. Preferred: CKEditor Source view (preserves KDP HTML formatting) or iframe body typing
-        src_btn = page.locator("a.cke_button__source")
-        if src_btn.count() > 0 and src_btn.first.is_visible():
-            try:
-                src_btn.first.click()
-                src_area = page.locator("textarea.cke_source")
-                src_area.first.wait_for(state="visible", timeout=3000)
-                src_area.first.fill(html_desc)
-                src_btn.first.click()
-                time.sleep(0.5)
-            except Exception:
-                pass
-
-        # 2. Check whether KDP hidden input synced; if empty, type directly into WYSIWYG iframe body + blur
         def _hid_len() -> int:
             try:
                 return page.evaluate("() => (document.querySelector(\"input[name='data[print_book][description]']\")?.value || '').trim().length")
             except Exception:
                 return 0
 
+        # 0. Direct CKEditor 4 JS API (fastest & preserves KDP-whitelisted HTML tags)
+        try:
+            page.evaluate(
+                """(html) => {
+                    if (window.CKEDITOR && CKEDITOR.instances) {
+                        for (const k of Object.keys(CKEDITOR.instances)) {
+                            const inst = CKEDITOR.instances[k];
+                            inst.setData(html);
+                            inst.updateElement();
+                            inst.fire('change');
+                        }
+                    }
+                }""",
+                html_desc,
+            )
+            time.sleep(0.4)
+        except Exception:
+            pass
+
+        # 1. CKEditor Source view fallback if hidden input still empty
+        if _hid_len() == 0:
+            src_btn = page.locator("a.cke_button__source")
+            if src_btn.count() > 0 and src_btn.first.is_visible():
+                try:
+                    src_btn.first.click()
+                    src_area = page.locator("textarea.cke_source")
+                    src_area.first.wait_for(state="visible", timeout=3000)
+                    src_area.first.fill(html_desc)
+                    src_btn.first.click()
+                    time.sleep(0.5)
+                except Exception:
+                    pass
+
+        # 2. WYSIWYG iframe body typing + blur fallback
         if _hid_len() == 0 and page.locator("iframe.cke_wysiwyg_frame").count() > 0:
             try:
                 fb = page.frame_locator("iframe.cke_wysiwyg_frame").locator("body")
@@ -344,7 +400,7 @@ class KDPAssistant:
             except Exception:
                 pass
 
-        # 3. Legacy visible textarea or CKEditor5 fallback
+        # 3. Legacy visible textarea fallback
         if _hid_len() == 0:
             desc_textarea = page.locator("textarea#data-print-book-description:visible, textarea[name*='description']:visible, #data-book-description:visible")
             if desc_textarea.count() > 0:
@@ -429,6 +485,10 @@ class KDPAssistant:
                 time.sleep(1.5)
                 log("✓ Selected and saved KDP Categories.")
                 return True
+            # Ensure modal overlay is closed so Save & Continue remains clickable
+            close_btn = dlg.locator("button:has-text('Cancel'), button[aria-label='Close'], .a-button-close")
+            if close_btn.count() > 0 and close_btn.first.is_visible():
+                close_btn.first.click()
         except Exception as e:
             log(f"Category selection note: {e}")
         return False
@@ -548,22 +608,95 @@ class KDPAssistant:
             log(f"Note on details pre-fill: {e}")
             return False
 
-    def _fill_step3_pricing(self, page: Page, amz: Dict[str, Any], log: Callable) -> bool:
-        """Pre-fills Step 3 Paperback Rights & Pricing (All Territories + INR/USD list price) if reached."""
+    def _select_trim_size(self, page: Page, trim_size: str, log: Callable) -> None:
+        """Selects KDP Step 2 trim size (e.g. '8.5x11', '6x9', '5.5x8.5') if different from default."""
+        target_map = {
+            "8.5x11": ["8.5 x 11", "8.5\" x 11\""],
+            "6x9": ["6 x 9", "6\" x 9\""],
+            "5.5x8.5": ["5.5 x 8.5", "5.5\" x 8.5\""],
+            "5x8": ["5 x 8", "5\" x 8\""],
+        }
+        patterns = target_map.get((trim_size or "6x9").strip(), [])
+        if not patterns:
+            return
         try:
-            all_terr = page.locator("#worldwide-rights-radio, input[name*='territory'][value='WORLDWIDE']")
-            if all_terr.count() > 0:
+            diff_btn = page.locator("#trim-size-btn, button:has-text('Select a different size'), a:has-text('Select a different size')")
+            if diff_btn.count() > 0 and diff_btn.first.is_visible():
+                diff_btn.first.click()
+                time.sleep(1)
+                for pat in patterns:
+                    opt = page.locator(f"label:has-text('{pat}'), button:has-text('{pat}'), input[value*='{trim_size}']").first
+                    if opt.count() > 0 and opt.is_visible():
+                        opt.click()
+                        log(f"✓ Selected Trim Size: {trim_size} in.")
+                        time.sleep(0.8)
+                        break
+                close_btn = page.locator(".a-popover-modal:visible button:has-text('Done'), .a-popover-modal:visible button:has-text('Save'), [role='dialog']:visible button:has-text('Done')")
+                if close_btn.count() > 0 and close_btn.first.is_visible():
+                    close_btn.first.click()
+                    time.sleep(0.5)
+        except Exception as e:
+            log(f"Trim size selection note: {e}")
+
+    def _fill_step3_pricing(self, page: Page, amz: Dict[str, Any], log: Callable, auto_publish: bool = True) -> bool:
+        """Pre-fills Step 3 Paperback Rights & Pricing (All Territories + list price) and publishes or saves draft."""
+        try:
+            log("Configuring Step 3 (Rights, Territories & Pricing)...", 92)
+            all_terr_lbl = page.locator("label:has-text('All territories'), label:has(#worldwide-rights-radio), label:has(#all-territories-radio)")
+            all_terr = page.locator("#worldwide-rights-radio, #all-territories-radio, input[name*='territory'][value*='WORLDWIDE']")
+            if all_terr_lbl.count() > 0 and all_terr_lbl.first.is_visible():
+                all_terr_lbl.first.click()
+            elif all_terr.count() > 0:
                 all_terr.first.check(force=True)
+
             usd_price = amz.get("pricing", {}).get("usd", {}).get("paperback_list_price", 14.99)
-            us_input = page.locator("#data-pricing-print-us-price-input, input[name*='price'][name*='us']")
+            us_input = page.locator("#data-pricing-print-us-price-input, input[name*='price'][name*='us'], input[id*='us-price']")
             if us_input.count() > 0:
                 us_input.first.fill(str(usd_price))
+                us_input.first.press("Tab")
                 log(f"✓ Set US Paperback List Price: ${usd_price}")
+                time.sleep(1.5)
+
+            inr_price = amz.get("pricing", {}).get("inr", {}).get("paperback_list_price")
+            in_input = page.locator("#data-pricing-print-in-price-input, input[name*='price'][name*='in'], input[id*='in-price']")
+            if inr_price and in_input.count() > 0 and in_input.first.is_visible():
+                in_input.first.fill(str(inr_price))
+                in_input.first.press("Tab")
+                time.sleep(1)
+
+            if auto_publish:
+                pub_btn = page.locator(
+                    "#save-and-publish-announce, button:has-text('Publish Your Paperback Book'), button:has-text('Publish Your Book'), input[value*='Publish Your']"
+                )
+                if pub_btn.count() > 0 and pub_btn.first.is_visible():
+                    for _ in range(10):
+                        if pub_btn.first.is_enabled():
+                            break
+                        time.sleep(0.5)
+                    if pub_btn.first.is_enabled():
+                        log("Publishing Paperback Book on Amazon KDP...", 96)
+                        pub_btn.first.click(no_wait_after=True)
+                        for _ in range(25):
+                            time.sleep(1)
+                            # Handle optional confirmation modal
+                            confirm_btn = page.locator(".a-popover-modal:visible button:has-text('Publish'), [role='dialog']:visible button:has-text('OK')")
+                            if confirm_btn.count() > 0 and confirm_btn.first.is_visible():
+                                confirm_btn.first.click(no_wait_after=True)
+                            if "bookshelf" in page.url or "published" in page.url or "confirmation" in page.url:
+                                log("🎉 Amazon KDP Paperback Publish submitted!", 100)
+                                return True
+                        alerts = self._collect_visible_alerts(page)
+                        if alerts:
+                            log(f"⚠️ Step 3 Publish alert: {' | '.join(alerts[:3])}", 95)
+                            return False
+                        return True
+
             save_draft = page.locator("#save-announce")
             if save_draft.count() > 0 and save_draft.first.is_visible():
                 save_draft.first.click(no_wait_after=True)
                 time.sleep(2)
-            return True
+                log("✓ Saved KDP Step 3 Pricing as draft.")
+            return not auto_publish
         except Exception as e:
             log(f"Step 3 pricing note: {e}")
             return False
@@ -574,21 +707,27 @@ class KDPAssistant:
         amz: Dict[str, Any],
         interior_pdf: Path,
         cover_pdf: Path,
-        log: Callable
+        log: Callable,
+        advance_to_pricing: bool = True,
     ) -> bool:
-        """Attempts to automate Step 2: Interior PDF & Cover PDF file uploads and print options. Returns True if files were attached."""
+        """Automates Step 2: ISBN, Trim Size, Interior/Cover PDF uploads, Print Previewer Approve, and advancing to Step 3."""
         manuscript_attached = not interior_pdf.exists()
         cover_attached = not cover_pdf.exists()
         try:
             log("Configuring Step 2 print options & file uploaders...", 70)
 
-            # Assign Free KDP ISBN if option present
+            # Assign Free KDP ISBN + confirm popover if present
             free_isbn_btn = page.locator("#free-isbn-accordion button:has-text('Assign'), button:has-text('Assign me a free KDP ISBN')")
             if free_isbn_btn.count() > 0 and free_isbn_btn.first.is_visible():
                 try:
                     free_isbn_btn.first.click()
                     log("✓ Clicked 'Assign me a free KDP ISBN'.")
-                    time.sleep(2)
+                    time.sleep(1.5)
+                    confirm_isbn = page.locator(".a-popover-modal:visible button:has-text('Assign ISBN'), [role='dialog']:visible button:has-text('Assign ISBN'), #free-isbn-confirm-button")
+                    if confirm_isbn.count() > 0 and confirm_isbn.first.is_visible():
+                        confirm_isbn.first.click()
+                        log("✓ Confirmed Free KDP ISBN assignment.")
+                        time.sleep(2)
                 except Exception:
                     pass
 
@@ -600,6 +739,10 @@ class KDPAssistant:
                     log("✓ Selected: Black & white interior with white paper.")
                 except Exception:
                     pass
+
+            # Trim Size (crucial for 8.5x11 activity books vs 6x9 standard books)
+            trim_size = amz.get("print_specifications", {}).get("trim_size", "6x9")
+            self._select_trim_size(page, trim_size, log)
 
             # Bleed: No Bleed
             no_bleed = page.locator("#data-print-book-is-bleed-false, input[value*='no-bleed']")
@@ -621,12 +764,12 @@ class KDPAssistant:
 
             # 1. Upload Manuscript Interior PDF
             if interior_pdf.exists():
-                manuscript_file_input = page.locator("input[type='file'][name*='manuscript'], #data-print-book-upload-manuscript-file-upload-input, input[type='file'][accept*='pdf']")
+                manuscript_file_input = page.locator("#data-print-book-upload-manuscript-file-upload-input, input[type='file'][name*='manuscript'], input[type='file'][accept*='pdf']")
                 if manuscript_file_input.count() > 0:
                     try:
                         manuscript_file_input.first.set_input_files(str(interior_pdf.resolve()))
                         manuscript_attached = True
-                        log(f"📄 Uploading Manuscript Interior PDF: {interior_pdf.name}...", 80)
+                        log(f"📄 Uploading Manuscript Interior PDF: {interior_pdf.name}...", 78)
                     except Exception as e:
                         log(f"Could not set manuscript file: {e}")
                 else:
@@ -634,7 +777,6 @@ class KDPAssistant:
 
             # 2. Upload Cover Wrap PDF
             if cover_pdf.exists():
-                # First ensure "Upload a cover you already have" choice is active
                 cover_choice = page.locator("#data-print-book-publisher-cover-choice-accordion, label:has-text('Upload a cover you already have')")
                 if cover_choice.count() > 0:
                     try:
@@ -643,28 +785,61 @@ class KDPAssistant:
                     except Exception:
                         pass
 
-                cover_file_input = page.locator("input[type='file'][name*='cover'], #data-print-book-upload-cover-file-upload-input")
+                cover_file_input = page.locator("#data-print-book-upload-cover-file-upload-input, input[type='file'][name*='cover']")
                 if cover_file_input.count() > 0:
                     try:
                         cover_file_input.first.set_input_files(str(cover_pdf.resolve()))
                         cover_attached = True
-                        log(f"🎨 Uploading Full-Wrap Cover PDF: {cover_pdf.name}...", 90)
+                        log(f"🎨 Uploading Full-Wrap Cover PDF: {cover_pdf.name}...", 84)
                     except Exception as e:
                         log(f"Could not set cover file: {e}")
                 else:
                     log(f"ℹ️ Full-wrap cover PDF ready on disk: {cover_pdf.resolve()}")
 
-            if manuscript_attached and cover_attached:
-                time.sleep(5)
-                save_draft = page.locator("#save-announce")
-                if save_draft.count() > 0 and save_draft.first.is_visible():
-                    try:
-                        save_draft.first.click(no_wait_after=True)
-                        time.sleep(2)
-                        log("✓ Saved KDP Step 2 files as draft.")
-                    except Exception:
-                        pass
-            return manuscript_attached and cover_attached
+            if not (manuscript_attached and cover_attached):
+                return False
+
+            # Wait for file uploads to complete processing before launching Print Previewer
+            preview_btn = page.locator("#print-preview-noconfirm-announce, button:has-text('Launch Previewer'), a:has-text('Launch Previewer')")
+            for _ in range(45):
+                if preview_btn.count() > 0 and preview_btn.first.is_visible() and preview_btn.first.is_enabled():
+                    break
+                time.sleep(2)
+
+            if advance_to_pricing and preview_btn.count() > 0 and preview_btn.first.is_visible() and preview_btn.first.is_enabled():
+                try:
+                    log("🔍 Launching KDP Print Previewer...", 88)
+                    preview_btn.first.click(no_wait_after=True)
+                    approve_btn = page.locator("#print-preview-approve-button, button:has-text('Approve')")
+                    for _ in range(60):
+                        if approve_btn.count() > 0 and approve_btn.first.is_visible() and approve_btn.first.is_enabled():
+                            approve_btn.first.click(no_wait_after=True)
+                            log("✅ Print Previewer approved!", 90)
+                            time.sleep(3)
+                            break
+                        time.sleep(3)
+                except Exception as prev_e:
+                    log(f"Print Previewer note: {prev_e}")
+
+            if advance_to_pricing:
+                save_cont = page.locator("#save-and-continue-announce, #save-and-continue-button, button:has-text('Save and Continue')")
+                if save_cont.count() > 0 and save_cont.first.is_visible() and save_cont.first.is_enabled():
+                    save_cont.first.click(no_wait_after=True)
+                    for _ in range(25):
+                        time.sleep(1)
+                        if "/pricing" in page.url or "/rights-and-pricing" in page.url:
+                            log("➡️ Advanced to Step 3 (Rights & Pricing).", 91)
+                            return True
+
+            save_draft = page.locator("#save-announce")
+            if save_draft.count() > 0 and save_draft.first.is_visible():
+                try:
+                    save_draft.first.click(no_wait_after=True)
+                    time.sleep(2)
+                    log("✓ Saved KDP Step 2 files as draft.")
+                except Exception:
+                    pass
+            return True
         except Exception as e:
             log(f"Note on Step 2 content: {e}")
             return False

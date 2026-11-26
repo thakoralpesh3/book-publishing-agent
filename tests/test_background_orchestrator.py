@@ -98,9 +98,10 @@ class TestBackgroundOrchestrator(unittest.TestCase):
             mock_engine.generate_front_and_back_matter.return_value = {"dedication": "d", "preface": "p", "author_bio": "b", "review_cta": "r"}
             mock_engine.generate_chapter_content.return_value = "# Chapter 1\nBody"
             writer = BookWriter(mock_engine)
-            res = writer.create_book(topic="Cute animals drawing", target_chapters=1, book_type="activity_drawing")
+            res = writer.create_book(topic="Cute animals drawing", target_chapters=1, book_type="activity_drawing", trend_id="kids-drawing-animals-masterclass")
             self.assertNotEqual(res["slug"], "kids_drawing_book__step-by-step_cute_animals__dood")
             self.assertTrue(res["slug"].endswith("_2"))
+            self.assertEqual(res.get("trend_id"), "kids-drawing-animals-masterclass")
 
     def test_04c_select_daily_trend_scouts_fresh_trends_when_exhausted(self):
         """Verifies live scouting with exclude_topics is triggered when local/default trends are exhausted."""

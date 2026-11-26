@@ -130,6 +130,50 @@ class FlipkartAssistant:
             "front_cover_jpg_path": str((book_dir / "cover_front.jpg").resolve())
         }
 
+    def _try_api_fallback(
+        self,
+        book_dir: Path,
+        browser_reason: str,
+        validation: Dict[str, Any],
+        excel_path: Path,
+        status_log: List[str],
+        log: Callable[[str, Optional[int]], None],
+    ) -> Dict[str, Any]:
+        """Falls back to Flipkart Marketplace Seller API v3 when browser upload is unavailable."""
+        from uploader.flipkart_api import FlipkartSellerAPI
+
+        log(f"Browser upload unavailable ({browser_reason}). Trying Flipkart Seller API v3 fallback...", 68)
+        api = FlipkartSellerAPI()
+        api_res = api.upload_listing(book_dir, progress_cb=log)
+        if api_res.get("status") == "completed":
+            status_log.append(f"API fallback succeeded (SKU: {api_res.get('sku_id')})")
+            return {
+                "status": "completed",
+                "platform": "flipkart",
+                "mode": "api",
+                "sku_id": api_res.get("sku_id"),
+                "product_id": api_res.get("product_id"),
+                "api_response": api_res.get("api_response"),
+                "validation": validation,
+                "excel_path": str(excel_path.resolve()) if excel_path.exists() else None,
+                "log": status_log,
+            }
+
+        api_msg = api_res.get("message", "Flipkart API upload failed")
+        combined_error = f"{browser_reason} | API fallback: {api_msg}"
+        log(f"⚠️ {combined_error}", 90)
+        return {
+            "status": "failed",
+            "platform": "flipkart",
+            "mode": "browser+api",
+            "message": f"Flipkart upload interrupted: {combined_error}",
+            "error": combined_error,
+            "error_code": api_res.get("error_code"),
+            "validation": validation,
+            "excel_path": str(excel_path.resolve()) if excel_path.exists() else None,
+            "log": status_log,
+        }
+
     def launch_assisted_session(
         self,
         book_dir: Path,
@@ -137,7 +181,7 @@ class FlipkartAssistant:
         progress_cb: Optional[Callable[[str, int], None]] = None,
         keep_open_seconds: int = 120
     ) -> Dict[str, Any]:
-        """Launches an interactive Playwright browser session for Flipkart Seller Hub."""
+        """Launches Playwright browser upload for Flipkart Seller Hub, falling back to Seller API v3 if impossible."""
         book_dir = Path(book_dir)
         validation = self.validate_flipkart_listing(book_dir)
         excel_path = book_dir / "flipkart_bulk_catalog.xlsx"
@@ -164,98 +208,123 @@ class FlipkartAssistant:
             except Exception:
                 pass
 
-        with sync_playwright() as p:
-            context = p.chromium.launch_persistent_context(
-                user_data_dir=str(self.user_data_dir),
-                headless=effective_headless,
-                viewport={"width": 1366, "height": 900},
-                args=["--start-maximized", "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer", "--disable-dev-shm-usage"]
-            )
-            page = context.new_page()
-            session_error = None
-            try:
-                log("Navigating to Flipkart Seller Hub (https://seller.flipkart.com/)...", 20)
+        session_error = None
+        try:
+            with sync_playwright() as p:
+                context = p.chromium.launch_persistent_context(
+                    user_data_dir=str(self.user_data_dir),
+                    headless=effective_headless,
+                    viewport={"width": 1366, "height": 900},
+                    args=["--start-maximized", "--no-sandbox", "--disable-gpu", "--disable-software-rasterizer", "--disable-dev-shm-usage"]
+                )
+                page = context.new_page()
                 try:
-                    page.goto("https://seller.flipkart.com/", timeout=60000, wait_until="domcontentloaded")
+                    log("Navigating to Flipkart Seller Hub (https://seller.flipkart.com/)...", 20)
+                    try:
+                        page.goto("https://seller.flipkart.com/", timeout=60000, wait_until="domcontentloaded")
+                    except Exception as e:
+                        log(f"Navigation notice: {e}")
+
+                    time.sleep(5)
+
+                    # Check if seller is logged in (dashboard presence and absence of guest marketing/login triggers)
+                    has_login_btn = page.locator("button:has-text('Login'), a:has-text('Login')").count() > 0
+                    is_logged_in = ("dashboard" in page.url or "my-listings" in page.url) and not has_login_btn and "Sell Online" not in page.title() and "Become an Online Seller" not in page.title()
+                    if not is_logged_in and not effective_headless:
+                        log("Action Required: Please complete Flipkart Seller Hub login in browser...", 30)
+                        try:
+                            page.wait_for_url(lambda u: "dashboard" in u or "my-listings" in u, timeout=120000)
+                            log("✅ Flipkart Seller login confirmed!", 45)
+                            is_logged_in = True
+                        except Exception:
+                            pass
+
+                    if not is_logged_in:
+                        session_error = "login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in."
+                        log(f"🔑 {session_error}", 30)
+                    else:
+                        log("Navigating towards Bulk Listings Catalog Ingestion...", 60)
+                        try:
+                            page.goto("https://seller.flipkart.com/index.html#dashboard/my-listings/bulk-listings", timeout=30000)
+                            time.sleep(3)
+                        except Exception:
+                            pass
+
+                        # Select 'Books' vertical if a vertical search/selector is displayed first
+                        try:
+                            vert_input = page.locator("input[placeholder*='vertical' i], input[placeholder*='category' i], input[placeholder*='search' i]:visible")
+                            if vert_input.count() > 0 and page.locator("input[type='file']").count() == 0:
+                                vert_input.first.fill("Books")
+                                time.sleep(1.5)
+                                books_opt = page.locator("li:has-text('Books'), div[role='option']:has-text('Books'), button:has-text('Books')")
+                                if books_opt.count() > 0:
+                                    books_opt.first.click()
+                                    time.sleep(2)
+                        except Exception:
+                            pass
+
+                        file_submitted = False
+                        if excel_path.exists():
+                            bulk_file_input = page.locator("input[type='file'][accept*='xls'], input[type='file']")
+                            if bulk_file_input.count() > 0:
+                                try:
+                                    bulk_file_input.first.set_input_files(str(excel_path.resolve()))
+                                    log(f"📊 Attached Bulk Catalog: {excel_path.name}", 75)
+                                    time.sleep(2)
+                                    submit_btn = page.locator(
+                                        "button:has-text('Upload'), button:has-text('Submit'), button:has-text('Confirm'), button[type='submit']:visible"
+                                    )
+                                    if submit_btn.count() > 0 and submit_btn.first.is_enabled():
+                                        submit_btn.first.click()
+                                        time.sleep(4)
+                                        log("📤 Submitted Flipkart Bulk Catalog for ingestion!", 90)
+                                    file_submitted = True
+                                except Exception as e:
+                                    log(f"Bulk file attach/submit notice: {e}")
+
+                        if not file_submitted:
+                            if "sellerOnboarding" in page.url:
+                                session_error = "onboarding_incomplete: Flipkart Seller Hub account onboarding is still pending (#dashboard/sellerOnboarding). Complete seller verification on Flipkart before bulk catalog uploads can run."
+                            else:
+                                session_error = "catalog_input_not_found: Bulk listing file upload input was not found on page. Please ensure you have an active seller listing session."
+                            log(f"⚠️ {session_error}", 85)
+
+                    if not session_error:
+                        log("✅ Flipkart Seller Hub upload submitted via browser.", 95)
+                        if keep_open_seconds > 0 and not effective_headless:
+                            log(f"Session will remain open for {keep_open_seconds}s or until closed.", 100)
+                            start_wait = time.time()
+                            while time.time() - start_wait < keep_open_seconds:
+                                if page.is_closed():
+                                    log("Browser window was closed by user.")
+                                    break
+                                time.sleep(2)
                 except Exception as e:
-                    log(f"Navigation notice: {e}")
-
-                time.sleep(5)
-
-                # Check if seller is logged in (dashboard presence and absence of guest marketing/login triggers)
-                has_login_btn = page.locator("button:has-text('Login'), a:has-text('Login')").count() > 0
-                is_logged_in = ("dashboard" in page.url or "my-listings" in page.url) and not has_login_btn and "Sell Online" not in page.title() and "Become an Online Seller" not in page.title()
-                if not is_logged_in:
-                    log("Action Required: Please complete Flipkart Seller Hub login in browser...", 30)
+                    session_error = str(e)
+                    log(f"Flipkart Assistant session notice: {e}")
+                finally:
                     try:
-                        page.wait_for_url(lambda u: "dashboard" in u or "my-listings" in u, timeout=120000)
-                        log("✅ Flipkart Seller login confirmed!", 45)
-                        is_logged_in = True
+                        context.close()
                     except Exception:
                         pass
-
-                if not is_logged_in:
-                    session_error = "login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in."
-                    log(f"🔑 {session_error}", 30)
-                else:
-                    log("Navigating towards Bulk Listings Catalog Ingestion...", 60)
-                    try:
-                        page.goto("https://seller.flipkart.com/index.html#dashboard/my-listings/bulk-listings", timeout=30000)
-                        time.sleep(3)
-                    except Exception:
-                        pass
-
-                    file_attached = False
-                    if excel_path.exists():
-                        bulk_file_input = page.locator("input[type='file'][accept*='xls'], input[type='file']")
-                        if bulk_file_input.count() > 0:
-                            try:
-                                bulk_file_input.first.set_input_files(str(excel_path.resolve()))
-                                log(f"📊 Attached Bulk Catalog: {excel_path.name}!", 80)
-                                file_attached = True
-                            except Exception as e:
-                                log(f"Bulk file attach notice: {e}")
-
-                    if not file_attached:
-                        if "sellerOnboarding" in page.url:
-                            session_error = "onboarding_incomplete: Flipkart Seller Hub account onboarding is still pending (#dashboard/sellerOnboarding). Complete seller verification on Flipkart before bulk catalog uploads can run."
-                        else:
-                            session_error = "catalog_input_not_found: Bulk listing file upload input was not found on page. Please ensure you have an active seller listing session."
-                        log(f"⚠️ {session_error}", 85)
-
-                if not session_error:
-                    log("✅ Flipkart Seller Hub session ready. Complete your listing upload.", 95)
-                    log(f"Session will remain open for {keep_open_seconds}s or until closed.", 100)
-
-                    start_wait = time.time()
-                    while time.time() - start_wait < keep_open_seconds:
-                        if page.is_closed():
-                            log("Browser window was closed by user.")
-                            break
-                        time.sleep(2)
-            except Exception as e:
-                session_error = str(e)
-                log(f"Flipkart Assistant session notice: {e}")
-            finally:
-                try:
-                    context.close()
-                except Exception:
-                    pass
+        except Exception as browser_exc:
+            session_error = f"browser_launch_failed: {browser_exc}"
+            log(f"Flipkart browser launch failed: {browser_exc}")
 
         if session_error:
-            return {
-                "status": "failed",
-                "platform": "flipkart",
-                "message": f"Flipkart upload interrupted: {session_error}",
-                "error": session_error,
-                "validation": validation,
-                "excel_path": str(excel_path.resolve()) if excel_path.exists() else None,
-                "log": status_log
-            }
+            return self._try_api_fallback(
+                book_dir=book_dir,
+                browser_reason=session_error,
+                validation=validation,
+                excel_path=excel_path,
+                status_log=status_log,
+                log=log,
+            )
 
         return {
             "status": "completed",
             "platform": "flipkart",
+            "mode": "browser",
             "validation": validation,
             "excel_path": str(excel_path.resolve()) if excel_path.exists() else None,
             "log": status_log

@@ -446,7 +446,8 @@ class BackgroundPublishingOrchestrator:
                 topic=topic,
                 target_audience=audience,
                 target_chapters=chapters,
-                book_type=book_type
+                book_type=book_type,
+                trend_id=trend_obj.get("id", "")
             )
             book_dir = Path(book_data["book_dir"])
             logger.info(f"Manuscript drafted: {book_data['title']} ({book_data.get('total_words', 0)} words)")
