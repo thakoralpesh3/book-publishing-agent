@@ -1,8 +1,206 @@
 {
-  "last_updated": "2026-10-06 21:22:22 UTC",
-  "last_scouted": "Initialized with Curated Signals",
-  "total_trends": 7,
+  "last_updated": "2026-11-26 18:57:53 UTC",
+  "last_scouted": "Gemini Live Scout (2026-11-26 18:57)",
+  "total_trends": 13,
   "trends": [
+    {
+      "id": "indian-sip-wealth-blueprint-2026-11-26",
+      "title": "The SIP Wealth Blueprint",
+      "subtitle": "A Practical Guide to Compounding Your Savings in the Indian Market",
+      "topic": "Step-by-step guide on starting Systematic Investment Plans (SIPs), understanding mutual fund categories, and tax-efficient wealth building for Indian middle-class professionals.",
+      "category": "wealth",
+      "category_name": "Personal Finance",
+      "target_audience": "Working professionals in India aged 25-40",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Medium",
+      "profit_potential": "Very High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "High search volume for Indian mutual fund guides",
+        "Rising interest in passive income books"
+      ],
+      "flipkart_signals": [
+        "Top-selling category in business and finance",
+        "High demand for regional financial literacy content"
+      ],
+      "recommended_keywords": [
+        "SIP investment India",
+        "mutual funds for beginners",
+        "wealth creation India",
+        "financial freedom India",
+        "passive income guide"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-26"
+    },
+    {
+      "id": "ai-prompt-engineering-for-creatives-2026-11-26",
+      "title": "Prompt Engineering for Creatives",
+      "subtitle": "Mastering Generative AI Workflows for Designers and Writers",
+      "topic": "Practical workflows for using LLMs and image generators to automate creative tasks, build brand assets, and accelerate content production.",
+      "category": "tech",
+      "category_name": "Technology & AI",
+      "target_audience": "Freelance designers, copywriters, and digital marketers",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Low",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "Surge in AI-related instructional books",
+        "High engagement on technical workflow guides"
+      ],
+      "flipkart_signals": [
+        "Growing demand for professional skill development books",
+        "Increased interest in digital tool mastery"
+      ],
+      "recommended_keywords": [
+        "AI prompt engineering",
+        "generative AI for business",
+        "AI workflow automation",
+        "creative AI tools",
+        "digital content creation"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-26"
+    },
+    {
+      "id": "kids-space-exploration-activity-book-2026-11-26",
+      "title": "Galactic Explorers: Space Activity Book",
+      "subtitle": "Connect-the-Dots, Mazes, and Facts About the Solar System",
+      "topic": "Educational activity book focused on space, planets, and astronauts, combining puzzles with bite-sized scientific facts for children.",
+      "category": "kids",
+      "category_name": "Children's Activity Books",
+      "target_audience": "Children aged 6-10",
+      "book_type": "activity_drawing",
+      "suggested_trim_size": "8.5x11",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Medium",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "Strong seasonal demand for educational kids' activities",
+        "High conversion on space-themed educational products"
+      ],
+      "flipkart_signals": [
+        "High demand for STEM-based learning materials",
+        "Popularity of interactive children's books"
+      ],
+      "recommended_keywords": [
+        "space activity book for kids",
+        "solar system puzzles",
+        "educational books for kids",
+        "kids space drawing",
+        "STEM activities for children"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-26"
+    },
+    {
+      "id": "deep-work-habit-design-2026-11-26",
+      "title": "The Focus Protocol",
+      "subtitle": "Designing Deep Work Habits in a Distracted World",
+      "topic": "A structured 30-day plan to eliminate digital distractions, optimize workspace environments, and implement time-blocking for high-output work.",
+      "category": "mindset",
+      "category_name": "Self-Help & Productivity",
+      "target_audience": "Remote workers and students",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Medium",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "Consistent bestseller status for productivity books",
+        "High reader interest in habit design"
+      ],
+      "flipkart_signals": [
+        "Rising demand for self-improvement and time management books",
+        "Strong sales in corporate productivity niche"
+      ],
+      "recommended_keywords": [
+        "deep work habits",
+        "productivity hacks",
+        "digital minimalism",
+        "focus and concentration",
+        "time management techniques"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-26"
+    },
+    {
+      "id": "circadian-rhythm-wellness-guide-2026-11-26",
+      "title": "The Circadian Reset",
+      "subtitle": "Optimize Your Sleep, Nutrition, and Energy Levels",
+      "topic": "Science-backed advice on aligning daily routines with biological clocks to improve sleep quality, metabolic health, and mental clarity.",
+      "category": "health",
+      "category_name": "Health & Wellness",
+      "target_audience": "Health-conscious adults and shift workers",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Low",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "High search volume for sleep improvement guides",
+        "Growing trend in biohacking literature"
+      ],
+      "flipkart_signals": [
+        "Increasing interest in holistic health and wellness",
+        "High demand for lifestyle improvement books"
+      ],
+      "recommended_keywords": [
+        "circadian rhythm guide",
+        "sleep hygiene tips",
+        "metabolic health",
+        "energy optimization",
+        "wellness and nutrition"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-26"
+    },
+    {
+      "id": "mastering-difficult-conversations-2026-11-26",
+      "title": "The Art of Difficult Conversations",
+      "subtitle": "Communication Strategies for Career and Personal Success",
+      "topic": "Frameworks for conflict resolution, negotiation, and assertive communication in high-stakes professional and personal environments.",
+      "category": "mindset",
+      "category_name": "Career & Communication",
+      "target_audience": "Managers, corporate professionals, and young adults",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Medium",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "High demand for soft-skills development books",
+        "Strong reviews for communication guides"
+      ],
+      "flipkart_signals": [
+        "Top category for career development books",
+        "High demand for professional growth resources"
+      ],
+      "recommended_keywords": [
+        "difficult conversations",
+        "conflict resolution",
+        "negotiation skills",
+        "assertive communication",
+        "career success strategies"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-26"
+    },
     {
       "id": "kids-drawing-animals-masterclass",
       "title": "How to Draw Cute Animals: 50 Step-by-Step Drawing Lessons for Creative Kids",
