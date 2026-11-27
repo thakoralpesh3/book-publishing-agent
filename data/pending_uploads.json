@@ -696,17 +696,17 @@
       "slug": "the_sip_wealth_blueprint",
       "platform": "kdp",
       "title": "the_sip_wealth_blueprint",
-      "status": "in_progress",
+      "status": "pending",
       "error_reason": "Amazon KDP upload interrupted: form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'.",
       "failure_reason": "Amazon KDP upload interrupted: form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'.",
       "failure_stage": "upload",
       "created_at": "2026-11-27 01:32:45",
-      "last_attempt": "2026-11-27 19:35:05",
-      "last_attempt_at": "2026-11-27 19:35:05",
-      "retry_count": 5,
-      "attempts": 5,
+      "last_attempt": "2026-11-27 19:44:28",
+      "last_attempt_at": "2026-11-27 19:44:28",
+      "retry_count": 6,
+      "attempts": 6,
       "max_retries": 5,
-      "next_retry_at": 1795733279.440195,
+      "next_retry_at": 1795792468.0705864,
       "artifacts": {
         "interior_pdf": true,
         "cover_pdf": true,
@@ -720,7 +720,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "auth_required": false
     }
   ]
 }
