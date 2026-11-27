@@ -600,17 +600,17 @@
       "slug": "how_to_draw_cute_animals___fun_doodles_for_kids",
       "platform": "flipkart",
       "title": "how_to_draw_cute_animals___fun_doodles_for_kids",
-      "status": "in_progress",
+      "status": "pending",
       "error_reason": "Flipkart upload interrupted: login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in. | API fallback: api_credentials_missing: Flipkart Seller API credentials (FLIPKART_APP_ID, FLIPKART_APP_SECRET) are not configured in .env.",
       "failure_reason": "Flipkart upload interrupted: login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in. | API fallback: api_credentials_missing: Flipkart Seller API credentials (FLIPKART_APP_ID, FLIPKART_APP_SECRET) are not configured in .env.",
       "failure_stage": "upload",
       "created_at": "2026-11-22 12:43:28",
-      "last_attempt": "2026-11-27 19:35:01",
-      "last_attempt_at": "2026-11-27 19:35:01",
-      "retry_count": 13,
-      "attempts": 13,
+      "last_attempt": "2026-11-27 19:46:30",
+      "last_attempt_at": "2026-11-27 19:46:30",
+      "retry_count": 14,
+      "attempts": 14,
       "max_retries": 5,
-      "next_retry_at": 1795730675.479334,
+      "next_retry_at": 1795810590.6646543,
       "artifacts": {
         "interior_pdf": true,
         "cover_pdf": true,
@@ -624,7 +624,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "auth_required": true
     },
     {
       "id": "pending_flipkart_how_to_draw_cute_animals__step-by-step_easy_drawin_1795331835",
