@@ -270,17 +270,17 @@
       "slug": "kids_drawing_book__step-by-step_cute_animals__dood",
       "platform": "kdp",
       "title": "kids_drawing_book__step-by-step_cute_animals__dood",
-      "status": "in_progress",
+      "status": "pending",
       "error_reason": "Amazon KDP upload interrupted: form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'.",
       "failure_reason": "Amazon KDP upload interrupted: form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'.",
       "failure_stage": null,
       "created_at": "2026-11-03 18:12:33",
-      "last_attempt": "2026-11-27 19:34:50",
-      "last_attempt_at": "2026-11-27 19:34:50",
-      "retry_count": 38,
-      "attempts": 38,
+      "last_attempt": "2026-11-27 19:36:37",
+      "last_attempt_at": "2026-11-27 19:36:37",
+      "retry_count": 39,
+      "attempts": 39,
       "max_retries": 5,
-      "next_retry_at": 1795732044.8325095,
+      "next_retry_at": 1795791997.3723316,
       "artifacts": {
         "interior_pdf": true,
         "cover_pdf": true,
@@ -294,7 +294,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "auth_required": false
     },
     {
       "id": "pending_flipkart_kids_drawing_book__step-by-step_cute_animals__dood_1793709753",
