@@ -303,17 +303,17 @@
       "slug": "kids_drawing_book__step-by-step_cute_animals__dood",
       "platform": "flipkart",
       "title": "kids_drawing_book__step-by-step_cute_animals__dood",
-      "status": "in_progress",
+      "status": "pending",
       "error_reason": "Flipkart upload interrupted: login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in. | API fallback: api_credentials_missing: Flipkart Seller API credentials (FLIPKART_APP_ID, FLIPKART_APP_SECRET) are not configured in .env.",
       "failure_reason": "Flipkart upload interrupted: login_required: Flipkart Seller Hub sign-in is required to access bulk catalog ingestion. Run 'python3 uploader/login_seller_portals.py flipkart' to log in. | API fallback: api_credentials_missing: Flipkart Seller API credentials (FLIPKART_APP_ID, FLIPKART_APP_SECRET) are not configured in .env.",
       "failure_stage": null,
       "created_at": "2026-11-03 18:12:33",
-      "last_attempt": "2026-11-27 19:34:50",
-      "last_attempt_at": "2026-11-27 19:34:50",
-      "retry_count": 41,
-      "attempts": 41,
+      "last_attempt": "2026-11-27 19:39:11",
+      "last_attempt_at": "2026-11-27 19:39:11",
+      "retry_count": 42,
+      "attempts": 42,
       "max_retries": 5,
-      "next_retry_at": 1795731369.3063924,
+      "next_retry_at": 1795810151.7131371,
       "artifacts": {
         "interior_pdf": true,
         "cover_pdf": true,
@@ -327,7 +327,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "auth_required": true
     },
     {
       "id": "pending_kdp_kids_drawing_book__step-by-step_cute_animals_1793814943",
@@ -401,17 +402,17 @@
       "slug": "kids_drawing_book__how_to_draw_cute_animals__easy_",
       "platform": "kdp",
       "title": "kids_drawing_book__how_to_draw_cute_animals__easy_",
-      "status": "in_progress",
+      "status": "pending",
       "error_reason": "Amazon KDP upload interrupted: form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'.",
       "failure_reason": "Amazon KDP upload interrupted: form_not_ready: Amazon KDP paperback form was not found on current page. Please verify your KDP account login via 'python3 uploader/login_seller_portals.py kdp'.",
       "failure_stage": "upload",
       "created_at": "2026-11-19 22:52:35",
-      "last_attempt": "2026-11-27 19:34:53",
-      "last_attempt_at": "2026-11-27 19:34:53",
-      "retry_count": 15,
-      "attempts": 15,
+      "last_attempt": "2026-11-27 19:38:35",
+      "last_attempt_at": "2026-11-27 19:38:35",
+      "retry_count": 16,
+      "attempts": 16,
       "max_retries": 5,
-      "next_retry_at": 1795732592.5777395,
+      "next_retry_at": 1795792115.8008902,
       "artifacts": {
         "interior_pdf": true,
         "cover_pdf": true,
@@ -425,7 +426,8 @@
         "cover_front_jpg",
         "flipkart_excel",
         "amazon_md"
-      ]
+      ],
+      "auth_required": false
     },
     {
       "id": "pending_flipkart_kids_drawing_book__how_to_draw_cute_animals__easy__1795108956",
