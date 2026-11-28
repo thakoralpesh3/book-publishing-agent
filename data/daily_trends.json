@@ -1,8 +1,206 @@
 {
-  "last_updated": "2026-11-26 18:57:53 UTC",
-  "last_scouted": "Gemini Live Scout (2026-11-26 18:57)",
-  "total_trends": 13,
+  "last_updated": "2026-11-28 15:06:06 UTC",
+  "last_scouted": "Gemini Live Scout (2026-11-28 15:06)",
+  "total_trends": 19,
   "trends": [
+    {
+      "id": "ai-driven-career-pivot-2026-11-28",
+      "title": "The AI-Proof Career",
+      "subtitle": "Strategic Frameworks for Upskilling and Future-Proofing Your Professional Value in the Age of Automation",
+      "topic": "Practical career transition strategies using AI tools to automate repetitive tasks and enhance high-value human skills.",
+      "category": "tech",
+      "category_name": "Career & Technology",
+      "target_audience": "Mid-career professionals aged 25-45",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Low",
+      "profit_potential": "Very High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "Rising search volume for AI career guides",
+        "High pre-order interest in professional development"
+      ],
+      "flipkart_signals": [
+        "Growth in professional certification books",
+        "High demand for career advancement literature"
+      ],
+      "recommended_keywords": [
+        "AI career guide",
+        "future of work",
+        "professional upskilling",
+        "career pivot",
+        "job automation"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-28"
+    },
+    {
+      "id": "kids-space-exploration-drawing-2026-11-28",
+      "title": "Cosmic Creators: Space Drawing Lab",
+      "subtitle": "Learn to Draw Planets, Rockets, and Alien Worlds with Easy Step-by-Step Guides for Young Astronomers",
+      "topic": "A structured drawing activity book focusing on space themes, galaxies, and futuristic technology for children.",
+      "category": "kids",
+      "category_name": "Children's Activity Books",
+      "target_audience": "Children ages 6-12",
+      "book_type": "activity_drawing",
+      "suggested_trim_size": "8.5x11",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Medium",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "High seasonal interest in space-themed gifts",
+        "Top-rated category for educational activities"
+      ],
+      "flipkart_signals": [
+        "Strong demand for STEM-based creative books",
+        "High conversion rates for activity sets"
+      ],
+      "recommended_keywords": [
+        "how to draw space",
+        "kids drawing book",
+        "space activity book",
+        "learn to draw rockets",
+        "drawing for kids"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-28"
+    },
+    {
+      "id": "holistic-sleep-optimization-2026-11-28",
+      "title": "The Deep Sleep Protocol",
+      "subtitle": "A 30-Day Science-Backed Guide to Resetting Your Circadian Rhythm and Eliminating Burnout",
+      "topic": "A wellness guide focusing on sleep hygiene, nutrition, and environmental factors to improve cognitive performance.",
+      "category": "health",
+      "category_name": "Wellness & Health",
+      "target_audience": "Stressed professionals and students",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Medium",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "Surging interest in biohacking and sleep health",
+        "High review volume for wellness journals"
+      ],
+      "flipkart_signals": [
+        "Increased health-conscious book purchases",
+        "Trending wellness category"
+      ],
+      "recommended_keywords": [
+        "sleep hygiene",
+        "circadian rhythm",
+        "burnout recovery",
+        "wellness guide",
+        "deep sleep"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-28"
+    },
+    {
+      "id": "micro-investing-for-gen-z-2026-11-28",
+      "title": "The Pocket Capitalist",
+      "subtitle": "Mastering Micro-Investing, Fractional Shares, and Automated Savings for Financial Independence",
+      "topic": "A beginner-friendly guide to building wealth through small, consistent investments using modern digital platforms.",
+      "category": "wealth",
+      "category_name": "Personal Finance",
+      "target_audience": "Gen Z and young millennials",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Low",
+      "profit_potential": "Very High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "High search volume for micro-investing",
+        "Growth in financial literacy for youth"
+      ],
+      "flipkart_signals": [
+        "Strong interest in investment books",
+        "Rising demand for finance for beginners"
+      ],
+      "recommended_keywords": [
+        "micro investing",
+        "financial independence",
+        "wealth building",
+        "fractional shares",
+        "personal finance"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-28"
+    },
+    {
+      "id": "digital-minimalism-habit-design-2026-11-28",
+      "title": "The Focused Mindset",
+      "subtitle": "Designing Habits for Deep Work in a Distraction-Filled Digital World",
+      "topic": "Strategies for habit formation and digital detoxing to reclaim focus and productivity in a hyper-connected environment.",
+      "category": "mindset",
+      "category_name": "Self-Help & Productivity",
+      "target_audience": "Remote workers and digital creators",
+      "book_type": "standard",
+      "suggested_trim_size": "6x9",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Medium",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "High interest in productivity hacks",
+        "Trending topic in self-help"
+      ],
+      "flipkart_signals": [
+        "Consistent sales in productivity genre",
+        "High engagement with habit-building books"
+      ],
+      "recommended_keywords": [
+        "digital minimalism",
+        "deep work",
+        "habit design",
+        "productivity tips",
+        "focus improvement"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-28"
+    },
+    {
+      "id": "kids-mandala-nature-drawing-2026-11-28",
+      "title": "Nature's Patterns: Mandala Drawing for Kids",
+      "subtitle": "Calming Step-by-Step Drawing Lessons Inspired by Flowers, Leaves, and Forest Shapes",
+      "topic": "A creative drawing book that combines mindfulness with art, teaching children to draw symmetrical nature-based patterns.",
+      "category": "kids",
+      "category_name": "Children's Art & Mindfulness",
+      "target_audience": "Children ages 7-14",
+      "book_type": "activity_drawing",
+      "suggested_trim_size": "8.5x11",
+      "suggested_chapters": 5,
+      "demand_score": 99,
+      "competition_score": "Low",
+      "profit_potential": "High",
+      "badge": "Amazon Bestseller Trend",
+      "amazon_signals": [
+        "High demand for mindfulness art books",
+        "Growing interest in nature-themed activities"
+      ],
+      "flipkart_signals": [
+        "Strong sales in creative hobby books",
+        "High interest in art therapy for kids"
+      ],
+      "recommended_keywords": [
+        "mandala drawing",
+        "nature drawing for kids",
+        "mindful art",
+        "pattern drawing",
+        "kids art book"
+      ],
+      "is_hot_daily_trend": true,
+      "scouted_date": "2026-11-28"
+    },
     {
       "id": "indian-sip-wealth-blueprint-2026-11-26",
       "title": "The SIP Wealth Blueprint",
